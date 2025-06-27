@@ -36,177 +36,135 @@ include '../../includes/header.php';
     </div>
 </section>
 
-<!-- Featured Events with 3D Cards -->
+<!-- ENHANCED FEATURED EVENTS SECTION -->
 <section class="featured-events perspective-container">
     <div class="container">
-        <h2 class="section-title">🔥 Featured Events</h2>
+        <h2 class="section-title">
+            <span class="title-icon">⭐</span>
+            Featured Events
+        </h2>
         
-        <div class="featured-grid">
-            <?php
-            // TODO: Replace with database query
-            // $featured_events = getFeaturedEvents(); // This will come from database
-            
-            // Temporary static data - will be replaced with dynamic database content
-            $featured_events = [
-                [
-                    'id' => 1,
-                    'title' => 'AI & Future Tech Summit', 
-                    'type' => 'Academic', 
-                    'date' => '2025-02-15',
-                    'time' => '10:00 AM',
-                    'location' => 'Main Auditorium',
-                    'description' => 'Explore the latest in AI technology and its impact on education',
-                    'icon' => '🤖',
-                    'organizer' => 'Tech Department'
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Campus Music Festival', 
-                    'type' => 'Social', 
-                    'date' => '2025-02-20',
-                    'time' => '6:00 PM',
-                    'location' => 'Campus Grounds',
-                    'description' => 'Join us for an evening of amazing music and entertainment',
-                    'icon' => '🎵',
-                    'organizer' => 'Student Union'
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'Innovation Showcase', 
-                    'type' => 'Academic', 
-                    'date' => '2025-02-25',
-                    'time' => '2:00 PM',
-                    'location' => 'Innovation Lab',
-                    'description' => 'Students present their groundbreaking projects and innovations',
-                    'icon' => '💡',
-                    'organizer' => 'Research Department'
-                ]
-            ];
-            
-            foreach ($featured_events as $index => $event): ?>
-                <div class="event-card-3d card-3d float-element" style="animation-delay: <?php echo $index * 0.2; ?>s;">
-                    <div class="event-content">
-                        <div class="event-icon"><?php echo $event['icon']; ?></div>
-                        <h3 class="event-title"><?php echo htmlspecialchars($event['title']); ?></h3>
-                        <div class="event-meta">
-                            <span class="event-type <?php echo strtolower($event['type']); ?>">
-                                <?php echo $event['type']; ?>
-                            </span>
-                            <span class="event-date">📅 <?php echo date('M j, Y', strtotime($event['date'])); ?></span>
-                        </div>
-                        <div class="event-details">
-                            <p class="event-time">⏰ <?php echo $event['time']; ?></p>
-                            <p class="event-location">📍 <?php echo htmlspecialchars($event['location']); ?></p>
-                            <p class="event-organizer">👤 <?php echo htmlspecialchars($event['organizer']); ?></p>
-                            <p class="event-description"><?php echo htmlspecialchars($event['description']); ?></p>
-                        </div>
-                        <div class="event-actions">
-                            <a href="event-details.php?id=<?php echo $event['id']; ?>" class="btn-3d small">
-                                View Details
-                            </a>
-                            <button class="btn-3d small secondary" onclick="registerForEvent(<?php echo $event['id']; ?>)">
-                                Register
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</section>
-
-<!-- Dynamic Calendar & Filters Section -->
-<section class="calendar-section perspective-container">
-    <div class="container">
-        <h2 class="section-title">📅 Event Calendar & Filters</h2>
-        
-        <!-- Calendar Navigation -->
-        <div class="calendar-nav glass-morphism">
-            <button class="nav-btn" onclick="previousMonth()">←</button>
-            <span class="current-month" id="currentMonth">February 2025</span>
-            <button class="nav-btn" onclick="nextMonth()">→</button>
-        </div>
-        
-        <!-- Calendar Grid -->
-        <div class="calendar-container glass-morphism">
-            <div class="calendar-grid" id="calendarGrid">
-                <!-- Calendar days will be dynamically generated -->
-            </div>
-        </div>
-        
-        <!-- Event Filters -->
-        <div class="filters-container">
-            <h3 class="filter-title">🎯 Filter Events</h3>
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">All Events</button>
-                <button class="filter-btn" data-filter="academic">📚 Academic</button>
-                <button class="filter-btn" data-filter="social">🎉 Social</button>
+        <!-- Event Controls -->
+        <div class="event-controls">
+            <div class="event-filters">
+                <button class="filter-btn active" data-filter="all">🎯 All Events</button>
+                <button class="filter-btn" data-filter="academic">🎓 Academic</button>
                 <button class="filter-btn" data-filter="sports">⚽ Sports</button>
                 <button class="filter-btn" data-filter="cultural">🎭 Cultural</button>
+                <button class="filter-btn" data-filter="tech">💻 Tech</button>
+            </div>
+            
+            <div class="event-calendar">
+                <label for="eventDate">📅 Filter by Date:</label>
+                <input type="date" id="eventDate" class="calendar-input">
+            </div>
+        </div>
+        
+        <!-- Events Slider -->
+        <div class="events-slider">
+            <div class="events-container" id="eventsContainer">
+                <!-- Slide 1 -->
+                <div class="event-slide active" data-slide="1">
+                    <div class="event-card-3d" data-category="tech">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>JAN</div>
+                                <div>28</div>
+                            </div>
+                            <span class="event-category">💻 Tech</span>
+                        </div>
+                        <h3 class="event-title">AI Innovation Summit</h3>
+                        <p class="event-description">Explore the future of artificial intelligence with industry leaders and cutting-edge demonstrations.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Tech Hub Auditorium</span>
+                            <span class="event-attendees">👥 250+ Attending</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
-
-<!-- Dynamic Announcements Section -->
+      
+<!-- REDESIGNED ANNOUNCEMENTS SECTION -->
 <section class="announcements-section perspective-container">
     <div class="container">
-        <h2 class="section-title">📢 Latest Announcements</h2>
+        <h2 class="section-title">
+            <span class="title-icon">📢</span>
+            Latest Announcements
+        </h2>
         
-        <div class="announcements-grid">
-            <?php
-            // TODO: Replace with database query
-            // $announcements = getLatestAnnouncements(); // This will come from database
-            
-            // Temporary static data - will be replaced with dynamic database content
-            $announcements = [
-                [
-                    'id' => 1,
-                    'title' => 'Campus Innovation Fair Next Week',
-                    'content' => 'Join us for the biggest innovation showcase of the year! Students will present their groundbreaking projects.',
-                    'date' => '2025-01-28',
-                    'author' => 'Dean of Students',
-                    'priority' => 'high'
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Guest Speaker from Oxford University',
-                    'content' => 'Renowned AI researcher Dr. Sarah Johnson will be speaking about the future of artificial intelligence.',
-                    'date' => '2025-01-27',
-                    'author' => 'Academic Affairs',
-                    'priority' => 'medium'
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'New Library Hours Extended',
-                    'content' => 'Starting next week, the library will be open 24/7 during exam period to support student studies.',
-                    'date' => '2025-01-26',
-                    'author' => 'Library Services',
-                    'priority' => 'low'
-                ]
-            ];
-            
-            foreach ($announcements as $announcement): ?>
-                <div class="announcement-card card-3d priority-<?php echo $announcement['priority']; ?>">
-                    <div class="announcement-header">
-                        <h3 class="announcement-title"><?php echo htmlspecialchars($announcement['title']); ?></h3>
-                        <span class="announcement-date">📅 <?php echo date('M j, Y', strtotime($announcement['date'])); ?></span>
+        <div class="announcements-slider">
+            <div class="announcements-container" id="announcementsContainer">
+                <?php
+                // Sample announcements data
+                $announcements = [
+                    [
+                        'id' => 1,
+                        'title' => 'Campus Innovation Fair Next Week',
+                        'content' => 'Join us for the biggest innovation showcase of the year! Students will present their groundbreaking projects and compete for amazing prizes.',
+                        'date' => '2025-01-28',
+                        'author' => 'Dean of Students',
+                        'priority' => 'high',
+                        'category' => 'Event',
+                        'icon' => '🚀'
+                    ],
+                    [
+                        'id' => 2,
+                        'title' => 'Guest Speaker from Oxford University',
+                        'content' => 'Renowned AI researcher Dr. Sarah Johnson will be speaking about the future of artificial intelligence in education.',
+                        'date' => '2025-01-27',
+                        'author' => 'Academic Affairs',
+                        'priority' => 'medium',
+                        'category' => 'Academic',
+                        'icon' => '🎓'
+                    ],
+                    [
+                        'id' => 3,
+                        'title' => 'New Library Hours Extended',
+                        'content' => 'Starting next week, the library will be open 24/7 during exam period to support student studies and research.',
+                        'date' => '2025-01-26',
+                        'author' => 'Library Services',
+                        'priority' => 'low',
+                        'category' => 'Service',
+                        'icon' => '📚'
+                    ],
+                    [
+                        'id' => 4,
+                        'title' => 'Student Health Center Updates',
+                        'content' => 'New mental health support services are now available. Free counseling sessions every Tuesday and Thursday.',
+                        'date' => '2025-01-25',
+                        'author' => 'Health Services',
+                        'priority' => 'medium',
+                        'category' => 'Health',
+                        'icon' => '🏥'
+                    ]
+                ];
+                
+                foreach ($announcements as $announcement): ?>
+                    <div class="announcement-card-modern priority-<?php echo $announcement['priority']; ?>">
+                        <div class="announcement-header">
+                            <div class="announcement-icon">
+                                <?php echo $announcement['icon']; ?>
+                            </div>
+                            <div class="announcement-meta">
+                                <span class="announcement-category"><?php echo $announcement['category']; ?></span>
+                                <div class="announcement-date">
+                                    📅 <?php echo date('M j, Y', strtotime($announcement['date'])); ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h3 class="announcement-title"><?php echo $announcement['title']; ?></h3>
+                        <p class="announcement-content"><?php echo $announcement['content']; ?></p>
+                        
+                        <div class="announcement-footer">
+                            <span class="announcement-author">👤 <?php echo $announcement['author']; ?></span>
+                            <button class="announcement-action">Read More</button>
+                        </div>
                     </div>
-                    <div class="announcement-content">
-                        <p><?php echo htmlspecialchars($announcement['content']); ?></p>
-                    </div>
-                    <div class="announcement-footer">
-                        <span class="announcement-author">👤 <?php echo htmlspecialchars($announcement['author']); ?></span>
-                        <span class="priority-badge priority-<?php echo $announcement['priority']; ?>">
-                            <?php echo ucfirst($announcement['priority']); ?> Priority
-                        </span>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        
-        <div class="view-all-announcements">
-            <a href="announcements.php" class="btn-3d">📢 View All Announcements</a>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </section>
