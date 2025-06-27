@@ -1,0 +1,55 @@
+/* ===== FUTURISTIC EMS - MAIN STYLES ===== */
+:root {
+    /* Base Colors from Designs */
+    --primary-blue: #2563eb;
+    --primary-dark: #1e40af;
+    --gray-light: #f3f4f6;
+    --gray-dark: #1f2937;
+    --white: #ffffff;
+    
+    /* NEW: Futuristic Gradients */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    
+    /* 3D & Animation Variables */
+    --perspective: 1000px;
+    --transition-smooth: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    --shadow-3d: 0 20px 40px rgba(0,0,0,0.1);
+    
+    /* Neon Effects */
+    --neon-blue: #00f5ff;
+    --neon-purple: #bf00ff;
+    --neon-green: #39ff14;
+}
+
+/* Base Reset & Typography */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--gray-light);
+    color: var(--gray-dark);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* 3D Perspective Container */
+.perspective-container {
+    perspective: var(--perspective);
+    perspective-origin: center center;
+}
+
+/* Glass Morphism Base */
+.glass-morphism {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-3d);
+    border-radius: 16px;
+}
