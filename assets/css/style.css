@@ -33,10 +33,11 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--gray-light);
-    color: var(--gray-dark);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: var(--white);
     line-height: 1.6;
     overflow-x: hidden;
+    min-height: 100vh;
 }
 
 /* 3D Perspective Container */
@@ -52,4 +53,323 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: var(--shadow-3d);
     border-radius: 16px;
+}
+
+/* Header Styles */
+.main-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 1rem 2rem;
+    margin: 1rem;
+    border-radius: 20px;
+}
+
+.navbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ===== ENHANCED LOGO SECTION ===== */
+.logo-container {
+    flex-shrink: 0;
+}
+
+.logo-link {
+    text-decoration: none;
+    display: block;
+    transition: var(--transition-smooth);
+}
+
+.logo-link:hover {
+    transform: scale(1.05);
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-radius: 15px;
+    transition: var(--transition-smooth);
+    position: relative;
+}
+
+.logo-wrapper:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.logo-image {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 12px;
+    transition: var(--transition-smooth);
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+    background: rgba(255, 255, 255, 0.1);
+    padding: 5px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo-image:hover {
+    transform: rotate(5deg) scale(1.1);
+    filter: drop-shadow(0 8px 25px rgba(102, 126, 234, 0.4));
+    box-shadow: 0 0 20px var(--neon-blue);
+}
+
+.logo-text {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.logo-text::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: var(--accent-gradient);
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.logo-wrapper:hover .logo-text::after {
+    width: 100%;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: bold;
+}
+
+/* Navigation Links */
+.nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: var(--white);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    position: relative;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.nav-link.active {
+    background: var(--accent-gradient);
+    color: white;
+    font-weight: 600;
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--neon-blue);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+/* Hero Section */
+.hero-3d {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2rem;
+}
+
+.hero-content {
+    text-align: center;
+    max-width: 800px;
+    padding: 3rem;
+    position: relative;
+    z-index: 10;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.holographic-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Accessibility Panel */
+.accessibility-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.accessibility-toggle {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition-smooth);
+}
+
+.accessibility-toggle:hover {
+    transform: scale(1.05);
+}
+
+.accessibility-options {
+    display: none;
+    margin-top: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.accessibility-panel:hover .accessibility-options {
+    display: flex;
+}
+
+.accessibility-options button {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.accessibility-options button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.mobile-menu-toggle span {
+    width: 25px;
+    height: 3px;
+    background: white;
+    margin: 3px 0;
+    transition: 0.3s;
+    border-radius: 2px;
+}
+
+/* ===== RESPONSIVE DESIGN FOR LOGO ===== */
+@media (max-width: 1024px) {
+    .logo-image {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .logo-text {
+        font-size: 1.8rem;
+    }
+    
+    .nav-links {
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+    
+    .mobile-menu-toggle {
+        display: flex;
+    }
+    
+    .logo-image {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .logo-text {
+        font-size: 1.5rem;
+    }
+    
+    .logo-wrapper {
+        gap: 0.8rem;
+    }
+    
+    .main-header {
+        padding: 0.8rem 1rem;
+        margin: 0.5rem;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .holographic-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-image {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .logo-text {
+        font-size: 1.3rem;
+    }
+    
+    .logo-wrapper {
+        gap: 0.8rem;
+    }
 }
