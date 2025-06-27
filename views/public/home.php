@@ -36,7 +36,7 @@ include '../../includes/header.php';
     </div>
 </section>
 
-<!-- ENHANCED FEATURED EVENTS SECTION -->
+<!-- ENHANCED FEATURED EVENTS SECTION - COMPLETE -->
 <section class="featured-events perspective-container">
     <div class="container">
         <h2 class="section-title">
@@ -65,7 +65,7 @@ include '../../includes/header.php';
             <div class="events-container" id="eventsContainer">
                 <!-- Slide 1 -->
                 <div class="event-slide active" data-slide="1">
-                    <div class="event-card-3d" data-category="tech">
+                    <div class="event-card-3d" data-category="tech" data-date="2025-01-28">
                         <div class="event-header">
                             <div class="event-date">
                                 <div>JAN</div>
@@ -80,8 +80,207 @@ include '../../includes/header.php';
                             <span class="event-attendees">👥 250+ Attending</span>
                         </div>
                     </div>
+                    
+                    <div class="event-card-3d" data-category="academic" data-date="2025-01-30">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>JAN</div>
+                                <div>30</div>
+                            </div>
+                            <span class="event-category">🎓 Academic</span>
+                        </div>
+                        <h3 class="event-title">Research Excellence Awards</h3>
+                        <p class="event-description">Celebrating outstanding research achievements by our faculty and students across all disciplines.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Main Auditorium</span>
+                            <span class="event-attendees">👥 500+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="cultural" data-date="2025-02-01">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>01</div>
+                            </div>
+                            <span class="event-category">🎭 Cultural</span>
+                        </div>
+                        <h3 class="event-title">International Culture Festival</h3>
+                        <p class="event-description">A vibrant celebration of diversity featuring performances, food, and traditions from around the world.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Campus Grounds</span>
+                            <span class="event-attendees">👥 1000+ Attending</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Slide 2 -->
+                <div class="event-slide" data-slide="2">
+                    <div class="event-card-3d" data-category="sports" data-date="2025-02-05">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>05</div>
+                            </div>
+                            <span class="event-category">⚽ Sports</span>
+                        </div>
+                        <h3 class="event-title">Inter-University Championship</h3>
+                        <p class="event-description">The ultimate showdown between top universities in football, basketball, and athletics.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Sports Complex</span>
+                            <span class="event-attendees">👥 800+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="tech" data-date="2025-02-08">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>08</div>
+                            </div>
+                            <span class="event-category">💻 Tech</span>
+                        </div>
+                        <h3 class="event-title">Hackathon 2025</h3>
+                        <p class="event-description">48-hour coding marathon to solve real-world problems with innovative technology solutions.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Innovation Lab</span>
+                            <span class="event-attendees">👥 300+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="academic" data-date="2025-02-10">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>10</div>
+                            </div>
+                            <span class="event-category">🎓 Academic</span>
+                        </div>
+                        <h3 class="event-title">Guest Lecture Series</h3>
+                        <p class="event-description">Nobel laureate Dr. Maria Santos discusses breakthrough discoveries in quantum physics.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Science Theater</span>
+                            <span class="event-attendees">👥 400+ Attending</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Slide 3 -->
+                <div class="event-slide" data-slide="3">
+                    <div class="event-card-3d" data-category="cultural" data-date="2025-02-14">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>14</div>
+                            </div>
+                            <span class="event-category">🎭 Cultural</span>
+                        </div>
+                        <h3 class="event-title">Valentine's Day Gala</h3>
+                        <p class="event-description">An elegant evening of music, dance, and romance to celebrate love and friendship.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Grand Ballroom</span>
+                            <span class="event-attendees">👥 600+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="sports" data-date="2025-02-16">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>16</div>
+                            </div>
+                            <span class="event-category">⚽ Sports</span>
+                        </div>
+                        <h3 class="event-title">Marathon for Charity</h3>
+                        <p class="event-description">Run for a cause! Join our annual charity marathon supporting local community projects.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Campus Track</span>
+                            <span class="event-attendees">👥 1200+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="tech" data-date="2025-02-18">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>18</div>
+                            </div>
+                            <span class="event-category">💻 Tech</span>
+                        </div>
+                        <h3 class="event-title">Startup Pitch Competition</h3>
+                        <p class="event-description">Student entrepreneurs present their innovative business ideas to industry investors.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Business Center</span>
+                            <span class="event-attendees">👥 350+ Attending</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Slide 4 -->
+                <div class="event-slide" data-slide="4">
+                    <div class="event-card-3d" data-category="academic" data-date="2025-02-20">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>20</div>
+                            </div>
+                            <span class="event-category">🎓 Academic</span>
+                        </div>
+                        <h3 class="event-title">International Conference</h3>
+                        <p class="event-description">Global scholars gather to discuss sustainable development and climate change solutions.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Conference Hall</span>
+                            <span class="event-attendees">👥 700+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="cultural" data-date="2025-02-22">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>22</div>
+                            </div>
+                            <span class="event-category">🎭 Cultural</span>
+                        </div>
+                        <h3 class="event-title">Art Exhibition Opening</h3>
+                        <p class="event-description">Showcasing masterpieces from talented student artists and renowned local creators.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Art Gallery</span>
+                            <span class="event-attendees">👥 450+ Attending</span>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card-3d" data-category="sports" data-date="2025-02-25">
+                        <div class="event-header">
+                            <div class="event-date">
+                                <div>FEB</div>
+                                <div>25</div>
+                            </div>
+                            <span class="event-category">⚽ Sports</span>
+                        </div>
+                        <h3 class="event-title">Swimming Championships</h3>
+                        <p class="event-description">Regional swimming competition featuring Olympic-style events and record attempts.</p>
+                        <div class="event-meta">
+                            <span class="event-location">📍 Aquatic Center</span>
+                            <span class="event-attendees">👥 900+ Attending</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Slider Navigation -->
+        <div class="slider-nav">
+            <button class="slider-btn" id="prevBtn">❮</button>
+            
+            <div class="slide-numbers">
+                <button class="slide-number active" data-slide="1">1</button>
+                <button class="slide-number" data-slide="2">2</button>
+                <button class="slide-number" data-slide="3">3</button>
+                <button class="slide-number" data-slide="4">4</button>
+            </div>
+            
+            <button class="slider-btn" id="nextBtn">❯</button>
         </div>
     </div>
 </section>
