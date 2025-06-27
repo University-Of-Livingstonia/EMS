@@ -22,16 +22,34 @@
 </head>
 <body class="<?php echo $body_class ?? ''; ?>">
     
-    <!-- Accessibility Panel -->
-    <div class="accessibility-panel glass-morphism" id="accessibilityPanel">
-        <button class="accessibility-toggle" aria-label="Accessibility Options">
-            ♿ <span>Accessibility</span>
+    <!-- FLOATING ACCESSIBILITY PANEL - REDESIGNED -->
+    <div class="floating-accessibility" id="floatingAccessibility">
+        <button class="accessibility-fab" aria-label="Accessibility Options" onclick="toggleAccessibilityMenu()">
+            <span class="fab-icon">♿</span>
+            <div class="fab-ripple"></div>
         </button>
-        <div class="accessibility-options">
-            <button data-action="high-contrast" aria-label="Toggle High Contrast">🎨 High Contrast</button>
-            <button data-action="large-text" aria-label="Increase Text Size">🔍 Large Text</button>
-            <button data-action="reduce-motion" aria-label="Reduce Animations">⏸️ Reduce Motion</button>
-            <button data-action="focus-mode" aria-label="Focus Mode">🎯 Focus Mode</button>
+        
+        <div class="accessibility-menu" id="accessibilityMenu">
+            <div class="menu-item" data-action="theme-toggle">
+                <span class="menu-icon">🌓</span>
+                <span class="menu-text">Dark/Light Mode</span>
+            </div>
+            <div class="menu-item" data-action="high-contrast">
+                <span class="menu-icon">🎨</span>
+                <span class="menu-text">High Contrast</span>
+            </div>
+            <div class="menu-item" data-action="large-text">
+                <span class="menu-icon">🔍</span>
+                <span class="menu-text">Large Text</span>
+            </div>
+            <div class="menu-item" data-action="reduce-motion">
+                <span class="menu-icon">⏸️</span>
+                <span class="menu-text">Reduce Motion</span>
+            </div>
+            <div class="menu-item" data-action="focus-mode">
+                <span class="menu-icon">🎯</span>
+                <span class="menu-text">Focus Mode</span>
+            </div>
         </div>
     </div>
 
@@ -50,7 +68,7 @@
                 </a>
             </div>
             
-            <div class="nav-links">
+            <div class="nav-links" id="navLinks">
                 <a href="../../index.php" class="nav-link <?php echo ($current_page == 'home') ? 'active' : ''; ?>">
                     🏠 <span>Home</span>
                 </a>
@@ -76,7 +94,7 @@
             </div>
             
             <!-- Mobile Menu Toggle -->
-            <button class="mobile-menu-toggle" aria-label="Toggle Mobile Menu">
+            <button class="mobile-menu-toggle" aria-label="Toggle Mobile Menu" onclick="toggleMobileMenu()">
                 <span></span>
                 <span></span>
                 <span></span>
