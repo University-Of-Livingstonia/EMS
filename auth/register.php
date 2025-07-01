@@ -6,6 +6,14 @@
 
 require_once '../includes/session.php';
 
+require_once '../controllers/AuthController.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $auth = new AuthController();
+    $auth->register($_POST); // Send form data to controller
+}
+
+
 // Redirect if already logged in
 if (isLoggedIn()) {
     header('Location: /EMS/dashboard/index.php');
