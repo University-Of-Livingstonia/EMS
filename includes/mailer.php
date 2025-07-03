@@ -1,14 +1,16 @@
 <?php
+// Load Composer's autoloader
+require_once __DIR__ . '/../vendor/autoload.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Load Composer's autoloader
-require_once __DIR__ . '/../vendor/autoload.php';
 
 // Load email configuration
 $config = include(__DIR__ . '/../config/email.php');
 
-function sendEmail($to, $subject, $body) {
+function sendEmail($to, $subject, $body)
+{
     global $config;
 
     $mail = new PHPMailer(true);
@@ -35,4 +37,3 @@ function sendEmail($to, $subject, $body) {
         return false;
     }
 }
-?>
