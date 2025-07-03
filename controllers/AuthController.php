@@ -1,10 +1,12 @@
 <?php
+$conn = require_once '../config/database.php'; // ✅ Add this line
 require_once '../models/User.php';
 require_once '../includes/mailer.php'; // Email sender
 
 class AuthController {
     public function register($data) {
-        $user = new User();
+        global $conn; // ✅ Make it available in method
+        $user = new User($conn); // ✅ Inject connection
         $created = $user->create($data); // Insert into DB
 
         if ($created) {
