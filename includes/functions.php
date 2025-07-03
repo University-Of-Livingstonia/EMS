@@ -1,8 +1,7 @@
-<UPDATED_CODE><?php
+<?php
                 /**
                  * 🛠️ Essential Helper Functions - EMS
                  * Ekwendeni Mighty Campus Event Management System
-                 */
 
                 /**
                  * 🧹 Sanitize input data
@@ -94,7 +93,7 @@
                         '#F7DC6F',
                         '#BB8FCE',
                         '#85C1E9'
-                    ];
+];
                     return $colors[array_rand($colors)];
                 }
 
@@ -159,7 +158,7 @@
                 /**
                  * 📧 Send email notification
                  */
-                function sendEmail($to, $subject, $message, $isHTML = true)
+                function sendEmail($to, $subject, $message)
                 {
                     // This is a placeholder for email functionality
                     // You can integrate with PHPMailer, SendGrid, or other email services
@@ -663,8 +662,6 @@
 
                         return $data;
                     } catch (Exception $e) {
-                        return $data;
-                    } catch (Exception $e) {
                         error_log("Chart data error: " . $e->getMessage());
                         return [];
                     }
@@ -681,7 +678,8 @@
                         'sports' => '#2196F3',
                         'cultural' => '#9C27B0',
                         'other' => '#607D8B'
-                    ];
+];
+                    
 
                     return $colors[$category] ?? $colors['other'];
                 }
@@ -918,186 +916,6 @@
                 }
 
                 /**
-                 * 🎯 Get event recommendations for user
-                 */
-                function getEventRecommendations($conn, $userId, $limit = 5)
-                {
-                    try {
-                        // Get user's registration history to understand preferences
-                        $sql = "SELECT e.category, e.event_type, COUNT(*) as count
-                FROM tickets t
-                JOIN events e ON t.event_id = e.event_id
-                WHERE t.user_id = ?
-                GROUP BY e.category, e.event_type
-                ORDER BY count DESC";
-
-                        $stmt = $conn->prepare($sql);
-                        $stmt->bind_param("i", $userId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $preferences = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $preferences[] = $row;
-                        }
-
-                        // Build recommendation query
-                        $recommendationSql = "SELECT DISTINCT e.*, u.first_name, u.last_name,
-                             COUNT(t.ticket_id) as popularity_score
-                             FROM events e
-                             LEFT JOIN users u ON e.organizer_id = u.user_id
-                             LEFT JOIN tickets t ON e.event_id = t.event_id
-                             WHERE e.status = 'approved' 
-                             AND e.start_datetime > NOW()
-                             AND e.event_id NOT IN (
-                                 SELECT event_id FROM tickets WHERE user_id = ?
-                             )";
-
-                        $params = [$userId];
-                        $types = 'i';
-
-                        // Add preference-based filtering
-                        if (!empty($preferences)) {
-                            $categoryConditions = [];
-                            foreach ($preferences as $pref) {
-                                $categoryConditions[] = "(e.category = ? AND e.event_type = ?)";
-                                $params[] = $pref['category'];
-                                $params[] = $pref['event_type'];
-                                $types .= 'ss';
-                            }
-
-                            if (!empty($categoryConditions)) {
-                                $recommendationSql .= " AND (" . implode(" OR ", $categoryConditions) . ")";
-                            }
-                        }
-
-                        $recommendationSql .= " GROUP BY e.event_id
-                               ORDER BY popularity_score DESC, e.start_datetime ASC
-                               LIMIT ?";
-
-                        $params[] = $limit;
-                        $types .= 'i';
-
-                        $stmt = $conn->prepare($recommendationSql);
-                        $stmt->bind_param($types, ...$params);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $recommendations = $result->fetch_all(MYSQLI_ASSOC);
-
-                        // If we don't have enough recommendations based on preferences, get popular events
-                        if (count($recommendations) < $limit) {
-                            $remaining = $limit - count($recommendations);
-                            $popularSql = "SELECT DISTINCT e.*, u.first_name, u.last_name,
-                          COUNT(t.ticket_id) as popularity_score
-                          FROM events e
-                          LEFT JOIN users u ON e.organizer_id = u.user_id
-                          LEFT JOIN tickets t ON e.event_id = t.event_id
-                          WHERE e.status = 'approved' 
-                          AND e.start_datetime > NOW()
-                          AND e.event_id NOT IN (
-                              SELECT event_id FROM tickets WHERE user_id = ?
-                          )";
-
-                            // Exclude already recommended events
-                            if (!empty($recommendations)) {
-                                $excludeIds = array_column($recommendations, 'event_id');
-                                $placeholders = str_repeat('?,', count($excludeIds) - 1) . '?';
-                                $popularSql .= " AND e.event_id NOT IN ($placeholders)";
-                                $params = array_merge([$userId], $excludeIds, [$remaining]);
-                                $types = 'i' . str_repeat('i', count($excludeIds)) . 'i';
-                            } else {
-                                $params = [$userId, $remaining];
-                                $types = 'ii';
-                            }
-
-                            $popularSql .= " GROUP BY e.event_id
-                            ORDER BY popularity_score DESC, e.start_datetime ASC
-                            LIMIT ?";
-
-                            $stmt = $conn->prepare($popularSql);
-                            $stmt->bind_param($types, ...$params);
-                            $stmt->execute();
-                            $result = $stmt->get_result();
-
-                            $popularEvents = $result->fetch_all(MYSQLI_ASSOC);
-                            $recommendations = array_merge($recommendations, $popularEvents);
-                        }
-
-                        return array_slice($recommendations, 0, $limit);
-                    } catch (Exception $e) {
-                        error_log("Event recommendations error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
-                 * 🎨 Generate event summary report
-                 */
-                function generateEventSummaryReport($conn, $eventId)
-                {
-                    try {
-                        // Get event details
-                        $stmt = $conn->prepare("SELECT e.*, u.first_name, u.last_name FROM events e LEFT JOIN users u ON e.organizer_id = u.user_id WHERE e.event_id = ?");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $event = $result->fetch_assoc();
-
-                        if (!$event) {
-                            return null;
-                        }
-
-                        $report = [
-                            'event' => $event,
-                            'statistics' => getEventStats($conn, $eventId),
-                            'analytics' => getEventAnalytics($conn, $eventId),
-                            'generated_at' => date('Y-m-d H:i:s'),
-                            'generated_by' => $_SESSION['user_id'] ?? 'System'
-                        ];
-
-                        // Additional insights
-                        $report['insights'] = [];
-
-                        // Registration rate insight
-                        $totalDays = max(1, ceil((strtotime($event['start_datetime']) - strtotime($event['created_at'])) / (24 * 60 * 60)));
-                        $dailyAvgRegistrations = $report['statistics']['total_registrations'] / $totalDays;
-
-                        $report['insights'][] = [
-                            'type' => 'registration_rate',
-                            'title' => 'Registration Rate',
-                            'value' => round($dailyAvgRegistrations, 2),
-                            'description' => "Average registrations per day since event creation"
-                        ];
-
-                        // Revenue per attendee
-                        if ($report['statistics']['total_registrations'] > 0) {
-                            $revenuePerAttendee = $report['statistics']['total_revenue'] / $report['statistics']['total_registrations'];
-                            $report['insights'][] = [
-                                'type' => 'revenue_per_attendee',
-                                'title' => 'Revenue per Attendee',
-                                'value' => formatCurrency($revenuePerAttendee),
-                                'description' => "Average revenue generated per registered attendee"
-                            ];
-                        }
-
-                        // Capacity utilization
-                        if (!empty($event['max_attendees']) && $event['max_attendees'] > 0) {
-                            $capacityUtilization = ($report['statistics']['total_registrations'] / $event['max_attendees']) * 100;
-                            $report['insights'][] = [
-                                'type' => 'capacity_utilization',
-                                'title' => 'Capacity Utilization',
-                                'value' => round($capacityUtilization, 1) . '%',
-                                'description' => "Percentage of maximum capacity filled"
-                            ];
-                        }
-
-                        return $report;
-                    } catch (Exception $e) {
-                        error_log("Event summary report error: " . $e->getMessage());
-                        return null;
-                    }
-                }
 
                 /**
                  * 🔔 Send bulk notifications
@@ -1192,234 +1010,6 @@
                 }
 
                 /**
-                 * 🎫 Verify ticket QR code
-                 */
-                function verifyTicketQR($conn, $qrData)
-                {
-                    try {
-                        $ticketData = json_decode($qrData, true);
-
-                        if (!$ticketData || !isset($ticketData['ticket_id'], $ticketData['verification_code'])) {
-                            return ['success' => false, 'message' => 'Invalid QR code format'];
-                        }
-
-                        // Get ticket details
-                        $stmt = $conn->prepare("SELECT t.*, e.title, e.start_datetime, u.first_name, u.last_name 
-                               FROM tickets t 
-                               JOIN events e ON t.event_id = e.event_id 
-                               JOIN users u ON t.user_id = u.user_id 
-                               WHERE t.ticket_id = ?");
-                        $stmt->bind_param("i", $ticketData['ticket_id']);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $ticket = $result->fetch_assoc();
-
-                        if (!$ticket) {
-                            return ['success' => false, 'message' => 'Ticket not found'];
-                        }
-
-                        // Verify the verification code
-                        $expectedCode = hash('sha256', $ticket['ticket_id'] . $ticket['created_at']);
-                        if ($ticketData['verification_code'] !== $expectedCode) {
-                            return ['success' => false, 'message' => 'Invalid verification code'];
-                        }
-
-                        // Check if ticket is already used
-                        if ($ticket['is_used']) {
-                            return [
-                                'success' => false,
-                                'message' => 'Ticket already used',
-                                'used_at' => $ticket['used_at'],
-                                'ticket' => $ticket
-                            ];
-                        }
-
-                        // Check payment status
-                        if ($ticket['payment_status'] !== 'completed') {
-                            return [
-                                'success' => false,
-                                'message' => 'Payment not completed',
-                                'payment_status' => $ticket['payment_status'],
-                                'ticket' => $ticket
-                            ];
-                        }
-
-                        return [
-                            'success' => true,
-                            'message' => 'Valid ticket',
-                            'ticket' => $ticket
-                        ];
-                    } catch (Exception $e) {
-                        error_log("Verify ticket QR error: " . $e->getMessage());
-                        return ['success' => false, 'message' => 'Verification failed'];
-                    }
-                }
-
-                /**
-                 * ✅ Mark ticket as used
-                 */
-                function markTicketAsUsed($conn, $ticketId, $verifiedBy = null)
-                {
-                    try {
-                        $stmt = $conn->prepare("UPDATE tickets SET is_used = 1, used_at = NOW(), verified_by = ? WHERE ticket_id = ?");
-                        $stmt->bind_param("ii", $verifiedBy, $ticketId);
-
-                        if ($stmt->execute()) {
-                            // Log the activity
-                            logActivity($conn, $verifiedBy, 'ticket_verified', "Verified ticket ID: $ticketId");
-
-                            return ['success' => true, 'message' => 'Ticket marked as used'];
-                        } else {
-                            return ['success' => false, 'message' => 'Failed to update ticket'];
-                        }
-                    } catch (Exception $e) {
-                        error_log("Mark ticket as used error: " . $e->getMessage());
-                        return ['success' => false, 'message' => 'Database error'];
-                    }
-                }
-
-                /**
-                 * 📊 Get system-wide statistics
-                 */
-                function getSystemStats($conn)
-                {
-                    try {
-                        $stats = [];
-
-                        // Total counts
-                        $stats['total_users'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM users");
-                        $stats['total_events'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM events");
-                        $stats['total_tickets'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM tickets");
-                        $stats['total_revenue'] = getSingleStat($conn, "SELECT SUM(price) as count FROM tickets WHERE payment_status = 'completed'") ?? 0;
-
-                        // This month stats
-                        $stats['users_this_month'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM users WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())");
-                        $stats['events_this_month'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM events WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())");
-                        $stats['revenue_this_month'] = getSingleStat($conn, "SELECT SUM(price) as count FROM tickets WHERE payment_status = 'completed' AND MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())") ?? 0;
-
-                        // Event status breakdown
-                        $stmt = $conn->prepare("SELECT status, COUNT(*) as count FROM events GROUP BY status");
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $stats['events_by_status'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $stats['events_by_status'][$row['status']] = $row['count'];
-                        }
-
-                        // Popular categories
-                        $stmt = $conn->prepare("SELECT category, COUNT(*) as count FROM events WHERE status = 'approved' GROUP BY category ORDER BY count DESC LIMIT 5");
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $stats['popular_categories'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $stats['popular_categories'][] = [
-                                'category' => $row['category'],
-                                'count' => $row['count']
-                            ];
-                        }
-
-                        // Recent activity
-                        $stats['recent_registrations'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM tickets WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
-                        $stats['recent_events'] = getSingleStat($conn, "SELECT COUNT(*) as count FROM events WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
-
-                        return $stats;
-                    } catch (Exception $e) {
-                        error_log("System stats error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
-                 * 🎨 Generate activity feed
-                 */
-                function getActivityFeed($conn, $userId = null, $limit = 20)
-                {
-                    try {
-                        $activities = [];
-
-                        // Recent event creations
-                        $sql = "SELECT 'event_created' as type, e.event_id as related_id, e.title, e.created_at, 
-                       u.first_name, u.last_name, u.user_id
-                FROM events e 
-                JOIN users u ON e.organizer_id = u.user_id 
-                WHERE e.status = 'approved'";
-
-                        $params = [];
-                        $types = '';
-
-                        if ($userId) {
-                            $sql .= " AND e.organizer_id = ?";
-                            $params[] = $userId;
-                            $types = 'i';
-                        }
-
-                        $sql .= " ORDER BY e.created_at DESC LIMIT ?";
-                        $params[] = $limit;
-                        $types .= 'i';
-
-                        $stmt = $conn->prepare($sql);
-                        $stmt->bind_param($types, ...$params);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        while ($row = $result->fetch_assoc()) {
-                            $activities[] = [
-                                'type' => $row['type'],
-                                'title' => $row['first_name'] . ' ' . $row['last_name'] . ' created event: ' . $row['title'],
-                                'timestamp' => $row['created_at'],
-                                'user_id' => $row['user_id'],
-                                'user_name' => $row['first_name'] . ' ' . $row['last_name'],
-                                'related_id' => $row['related_id'],
-                                'icon' => 'fas fa-calendar-plus',
-                                'color' => 'success'
-                            ];
-                        }
-
-                        // Recent registrations (if not user-specific)
-                        if (!$userId) {
-                            $regSql = "SELECT 'registration' as type, t.event_id as related_id, e.title, t.created_at,
-                              u.first_name, u.last_name, u.user_id
-                       FROM tickets t
-                       JOIN events e ON t.event_id = e.event_id
-                       JOIN users u ON t.user_id = u.user_id
-                       WHERE t.payment_status = 'completed'
-                       ORDER BY t.created_at DESC 
-                       LIMIT ?";
-
-                            $stmt = $conn->prepare($regSql);
-                            $stmt->bind_param("i", $limit);
-                            $stmt->execute();
-                            $result = $stmt->get_result();
-
-                            while ($row = $result->fetch_assoc()) {
-                                $activities[] = [
-                                    'type' => $row['type'],
-                                    'title' => $row['first_name'] . ' ' . $row['last_name'] . ' registered for: ' . $row['title'],
-                                    'timestamp' => $row['created_at'],
-                                    'user_id' => $row['user_id'],
-                                    'user_name' => $row['first_name'] . ' ' . $row['last_name'],
-                                    'related_id' => $row['related_id'],
-                                    'icon' => 'fas fa-ticket-alt',
-                                    'color' => 'primary'
-                                ];
-                            }
-                        }
-
-                        // Sort all activities by timestamp
-                        usort($activities, function ($a, $b) {
-                            return strtotime($b['timestamp']) - strtotime($a['timestamp']);
-                        });
-
-                        return array_slice($activities, 0, $limit);
-                    } catch (Exception $e) {
-                        error_log("Activity feed error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
                  * 🔧 Database maintenance functions
                  */
                 function performDatabaseMaintenance($conn)
@@ -1455,82 +1045,8 @@
                             'log' => $maintenanceLog,
                             'timestamp' => date('Y-m-d H:i:s')
                         ];
-                    } catch (Exception $e) {
-                        error_log("Database maintenance error: " . $e->getMessage());
-                        return [
-                            'success' => false,
-                            'error' => $e->getMessage(),
-                            'timestamp' => date('Y-m-d H:i:s')
-                        ];
                     }
                 }
-
-                /**
-                 * 🎯 Get event feedback/ratings
-                 */
-                function getEventFeedback($conn, $eventId)
-                {
-                    try {
-                        // Note: This assumes you have a feedback/ratings table
-                        // You might need to create this table in your database
-                        $sql = "SELECT f.*, u.first_name, u.last_name 
-                FROM event_feedback f 
-                JOIN users u ON f.user_id = u.user_id 
-                WHERE f.event_id = ? 
-                ORDER BY f.created_at DESC";
-
-                        $stmt = $conn->prepare($sql);
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $feedback = $result->fetch_all(MYSQLI_ASSOC);
-
-                        // Calculate average rating
-                        $avgRating = 0;
-                        if (!empty($feedback)) {
-                            $totalRating = array_sum(array_column($feedback, 'rating'));
-                            $avgRating = round($totalRating / count($feedback), 1);
-                        }
-
-                        return [
-                            'feedback' => $feedback,
-                            'average_rating' => $avgRating,
-                            'total_reviews' => count($feedback)
-                        ];
-                    } catch (Exception $e) {
-                        error_log("Get event feedback error: " . $e->getMessage());
-                        return [
-                            'feedback' => [],
-                            'average_rating' => 0,
-                            'total_reviews' => 0
-                        ];
-                    }
-                }
-
-                /**
-                 * 🎨 Format file size
-                 */
-                function formatFileSize($bytes, $precision = 2)
-                {
-                    $units = array('B', 'KB', 'MB', 'GB', 'TB');
-
-                    for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-                        $bytes /= 1024;
-                    }
-
-                    return round($bytes, $precision) . ' ' . $units[$i];
-                }
-
-                /**
-                 * 🔍 Validate file type
-                 */
-                function isValidFileType($filename, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'])
-                {
-                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                    return in_array($extension, $allowedTypes);
-                }
-
                 /**
                  * 🎯 Get user's event history
                  */
@@ -1578,25 +1094,6 @@
                         $stmt->bind_param("i", $ticketId);
                         $stmt->execute();
                         $result = $stmt->get_result();
-                        $data = $result->fetch_assoc();
-
-                        if (!$data) {
-                            return ['success' => false, 'message' => 'Ticket not found or event not attended'];
-                        }
-
-                        // Generate certificate data
-                        $certificateData = [
-                            'participant_name' => $data['first_name'] . ' ' . $data['last_name'],
-                            'event_title' => $data['title'],
-                            'event_date' => formatDate($data['start_datetime']),
-                            'organizer_name' => $data['org_first_name'] . ' ' . $data['org_last_name'],
-                            'certificate_id' => 'CERT-' . $data['ticket_id'] . '-' . date('Y'),
-                            'issue_date' => date('F j, Y')
-                        ];
-
-                        // TODO: Integrate with PDF generation library (like TCPDF or FPDF)
-                        // For now, return the data structure
-
                         return [
                             'success' => true,
                             'certificate_data' => $certificateData,
@@ -1620,194 +1117,13 @@
                         $result = $stmt->get_result();
                         $user = $result->fetch_assoc();
 
-                        if ($user && $user['notification_preferences']) {
+                        if ($user) {
                             return json_decode($user['notification_preferences'], true);
                         }
-
-                        // Default preferences
-                        return [
-                            'email_notifications' => true,
-                            'sms_notifications' => false,
-                            'event_reminders' => true,
-                            'payment_confirmations' => true,
-                            'event_updates' => true,
-                            'marketing_emails' => false
-                        ];
+                        return [];
                     } catch (Exception $e) {
                         error_log("Get notification preferences error: " . $e->getMessage());
                         return [];
-                    }
-                }
-
-                /**
-                 * ⚙️ Update notification preferences
-                 */
-                function updateNotificationPreferences($conn, $userId, $preferences)
-                {
-                    try {
-                        $preferencesJson = json_encode($preferences);
-                        $stmt = $conn->prepare("UPDATE users SET notification_preferences = ? WHERE user_id = ?");
-                        $stmt->bind_param("si", $preferencesJson, $userId);
-
-                        if ($stmt->execute()) {
-                            return ['success' => true, 'message' => 'Preferences updated successfully'];
-                        } else {
-                            return ['success' => false, 'message' => 'Failed to update preferences'];
-                        }
-                    } catch (Exception $e) {
-                        error_log("Update notification preferences error: " . $e->getMessage());
-                        return ['success' => false, 'message' => 'Database error'];
-                    }
-                }
-
-                /**
-                 * 🎯 Check event conflicts for user
-                 */
-                function checkEventConflicts($conn, $userId, $startDateTime, $endDateTime, $excludeEventId = null)
-                {
-                    try {
-                        $sql = "SELECT e.event_id, e.title, e.start_datetime, e.end_datetime
-                FROM tickets t
-                JOIN events e ON t.event_id = e.event_id
-                WHERE t.user_id = ? 
-                AND t.payment_status = 'completed'
-                AND (
-                    (e.start_datetime BETWEEN ? AND ?) OR
-                    (e.end_datetime BETWEEN ? AND ?) OR
-                    (? BETWEEN e.start_datetime AND e.end_datetime) OR
-                    (? BETWEEN e.start_datetime AND e.end_datetime)
-                )";
-
-                        $params = [$userId, $startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime];
-                        $types = 'issssss';
-
-                        if ($excludeEventId) {
-                            $sql .= " AND e.event_id != ?";
-                            $params[] = $excludeEventId;
-                            $types .= 'i';
-                        }
-
-                        $stmt = $conn->prepare($sql);
-                        $stmt->bind_param($types, ...$params);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        return $result->fetch_all(MYSQLI_ASSOC);
-                    } catch (Exception $e) {
-                        error_log("Check event conflicts error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
-                 * 📊 Generate monthly report
-                 */
-                function generateMonthlyReport($conn, $month = null, $year = null)
-                {
-                    try {
-                        if (!$month) $month = date('m');
-                        if (!$year) $year = date('Y');
-
-                        $report = [
-                            'period' => date('F Y', mktime(0, 0, 0, $month, 1, $year)),
-                            'generated_at' => date('Y-m-d H:i:s')
-                        ];
-
-                        // Events created this month
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM events WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $report['events_created'] = $result->fetch_assoc()['count'];
-
-                        // Events held this month
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM events WHERE MONTH(start_datetime) = ? AND YEAR(start_datetime) = ? AND status = 'approved'");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $report['events_held'] = $result->fetch_assoc()['count'];
-
-                        // Total registrations
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $report['total_registrations'] = $result->fetch_assoc()['count'];
-
-                        // Revenue generated
-                        $stmt = $conn->prepare("SELECT SUM(price) as revenue FROM tickets WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? AND payment_status = 'completed'");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $report['revenue'] = $result->fetch_assoc()['revenue'] ?? 0;
-
-                        // New users
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $report['new_users'] = $result->fetch_assoc()['count'];
-
-                        // Popular categories
-                        $stmt = $conn->prepare("SELECT category, COUNT(*) as count FROM events WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? GROUP BY category ORDER BY count DESC LIMIT 5");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $report['popular_categories'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $report['popular_categories'][] = $row;
-                        }
-
-                        // Top events by attendance
-                        $stmt = $conn->prepare("SELECT e.title, COUNT(t.ticket_id) as registrations 
-                               FROM events e 
-                               LEFT JOIN tickets t ON e.event_id = t.event_id 
-                               WHERE MONTH(e.start_datetime) = ? AND YEAR(e.start_datetime) = ? 
-                               GROUP BY e.event_id 
-                               ORDER BY registrations DESC 
-                               LIMIT 10");
-                        $stmt->bind_param("ii", $month, $year);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $report['top_events'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $report['top_events'][] = $row;
-                        }
-
-                        return $report;
-                    } catch (Exception $e) {
-                        error_log("Generate monthly report error: " . $e->getMessage());
-                        return null;
-                    }
-                }
-
-                /**
-                 * 🔐 Generate API token for user
-                 */
-                function generateAPIToken($conn, $userId, $tokenName = 'Default')
-                {
-                    try {
-                        $token = 'ems_' . bin2hex(random_bytes(32));
-                        $hashedToken = hash('sha256', $token);
-
-                        $stmt = $conn->prepare("INSERT INTO api_tokens (user_id, token_name, token_hash, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR))");
-                        $stmt->bind_param("iss", $userId, $tokenName, $hashedToken);
-
-                        if ($stmt->execute()) {
-                            return [
-                                'success' => true,
-                                'token' => $token,
-                                'token_id' => $conn->insert_id,
-                                'message' => 'API token generated successfully'
-                            ];
-                        } else {
-                            return ['success' => false, 'message' => 'Failed to generate token'];
-                        }
-                    } catch (Exception $e) {
-                        error_log("Generate API token error: " . $e->getMessage());
-                        return ['success' => false, 'message' => 'Database error'];
                     }
                 }
 
@@ -1841,13 +1157,12 @@
                         return ['valid' => false];
                     } catch (Exception $e) {
                         error_log("Validate API token error: " . $e->getMessage());
+                    } catch (Exception $e) {
+                        error_log("Validate API token error: " . $e->getMessage());
                         return ['valid' => false];
                     }
                 }
 
-                /**
-                 * 🎨 Format event duration
-                 */
                 function formatEventDuration($startDateTime, $endDateTime)
                 {
                     $start = new DateTime($startDateTime);
@@ -1894,54 +1209,6 @@
                         error_log("Get event waitlist error: " . $e->getMessage());
                         return [];
                     }
-                }
-
-                /**
-                 * 🔄 Process waitlist when spots become available
-                 */
-                function processWaitlist($conn, $eventId, $availableSpots = 1)
-                {
-                    try {
-                        // Get waitlisted users in order
-                        $stmt = $conn->prepare("SELECT w.*, u.first_name, u.last_name, u.email 
-                               FROM event_waitlist w 
-                               JOIN users u ON w.user_id = u.user_id 
-                               WHERE w.event_id = ? AND w.status = 'waiting'
-                               ORDER BY w.created_at ASC 
-                               LIMIT ?");
-                        $stmt->bind_param("ii", $eventId, $availableSpots);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $notifiedUsers = [];
-
-                        while ($waitlistEntry = $result->fetch_assoc()) {
-                            // Send notification to user
-                            $title = "Spot Available!";
-                            $message = "A spot has become available for the event you're waitlisted for. You have 24 hours to register.";
-
-                            $notificationResult = createNotification($conn, $waitlistEntry['user_id'], $title, $message, 'waitlist_notification', $eventId);
-
-                            if ($notificationResult['success']) {
-                                // Update waitlist status
-                                $updateStmt = $conn->prepare("UPDATE event_waitlist SET status = 'notified', notified_at = NOW() WHERE waitlist_id = ?");
-                                $updateStmt->bind_param("i", $waitlistEntry['waitlist_id']);
-                                $updateStmt->execute();
-
-                                $notifiedUsers[] = $waitlistEntry;
-                            }
-                        }
-
-                        return [
-                            'success' => true,
-                            'notified_count' => count($notifiedUsers),
-                            'notified_users' => $notifiedUsers
-                        ];
-                    } catch (Exception $e) {
-                        error_log("Process waitlist error: " . $e->getMessage());
-                        return ['success' => false, 'message' => 'Failed to process waitlist'];
-                    }
-                }
 
                 /**
                  * 🎨 Generate event social media content
@@ -1985,116 +1252,6 @@
                 }
 
                 /**
-                 * 🔍 Search and filter functions
-                 */
-                function buildSearchQuery($baseQuery, $searchParams, &$bindParams, &$types)
-                {
-                    $conditions = [];
-
-                    foreach ($searchParams as $field => $value) {
-                        if (empty($value)) continue;
-
-                        switch ($field) {
-                            case 'text_search':
-                                $conditions[] = "(title LIKE ? OR description LIKE ?)";
-                                $searchTerm = '%' . $value . '%';
-                                $bindParams[] = $searchTerm;
-                                $bindParams[] = $searchTerm;
-                                $types .= 'ss';
-                                break;
-
-                            case 'category':
-                                $conditions[] = "category = ?";
-                                $bindParams[] = $value;
-                                $types .= 's';
-                                break;
-
-                            case 'date_from':
-                                $conditions[] = "DATE(start_datetime) >= ?";
-                                $bindParams[] = $value;
-                                $types .= 's';
-                                break;
-
-                            case 'date_to':
-                                $conditions[] = "DATE(start_datetime) <= ?";
-                                $bindParams[] = $value;
-                                $types .= 's';
-                                break;
-
-                            case 'price_range':
-                                if ($value === 'free') {
-                                    $conditions[] = "(is_paid = 0 OR price = 0)";
-                                } elseif ($value === 'paid') {
-                                    $conditions[] = "is_paid = 1 AND price > 0";
-                                }
-                                break;
-                        }
-                    }
-
-                    if (!empty($conditions)) {
-                        $baseQuery .= " AND " . implode(" AND ", $conditions);
-                    }
-
-                    return $baseQuery;
-                }
-
-                /**
-                 * 🎯 Get event metrics for analytics
-                 */
-                function getEventMetrics($conn, $eventId)
-                {
-                    try {
-                        $metrics = [];
-
-                        // Registration conversion rate
-                        $stmt = $conn->prepare("SELECT 
-                                   COUNT(*) as total_views,
-                                   (SELECT COUNT(*) FROM tickets WHERE event_id = ?) as registrations
-                               FROM event_views WHERE event_id = ?");
-                        $stmt->bind_param("ii", $eventId, $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $data = $result->fetch_assoc();
-
-                        $metrics['views'] = $data['total_views'] ?? 0;
-                        $metrics['registrations'] = $data['registrations'] ?? 0;
-                        $metrics['conversion_rate'] = $metrics['views'] > 0 ?
-                            round(($metrics['registrations'] / $metrics['views']) * 100, 2) : 0;
-
-                        // Payment completion rate
-                        $stmt = $conn->prepare("SELECT 
-                                   COUNT(*) as total_tickets,
-                                   SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as completed_payments
-                               FROM tickets WHERE event_id = ?");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $data = $result->fetch_assoc();
-
-                        $metrics['payment_completion_rate'] = $data['total_tickets'] > 0 ?
-                            round(($data['completed_payments'] / $data['total_tickets']) * 100, 2) : 0;
-
-                        // Attendance rate (for completed events)
-                        $stmt = $conn->prepare("SELECT 
-                                   COUNT(*) as total_tickets,
-                                   SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) as attended
-                               FROM tickets WHERE event_id = ? AND payment_status = 'completed'");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $data = $result->fetch_assoc();
-
-                        $metrics['attendance_rate'] = $data['total_tickets'] > 0 ?
-                            round(($data['attended'] / $data['total_tickets']) * 100, 2) : 0;
-
-                        return $metrics;
-                    } catch (Exception $e) {
-                        error_log("Get event metrics error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
                  * 🔔 Send automated reminders
                  */
                 function sendAutomatedReminders($conn)
@@ -2122,202 +1279,14 @@
                         $result = $stmt->get_result();
 
                         while ($row = $result->fetch_assoc()) {
-                            $title = "Event Tomorrow: " . $row['title'];
-                            $message = "Don't forget! Your event '" . $row['title'] . "' is tomorrow at " .
-                                formatDateTime($row['start_datetime']) . " at " . $row['venue'];
-
-                            $notificationResult = createNotification($conn, $row['user_id'], $title, $message, 'event_reminder_24h', $row['event_id']);
-
-                            if ($notificationResult['success']) {
-                                $remindersSent++;
-                            }
-                        }
-
-                        // 1-hour reminders
-                        $stmt = $conn->prepare("SELECT DISTINCT e.*, t.user_id, u.email, u.first_name
-                               FROM events e
-                               JOIN tickets t ON e.event_id = t.event_id
-                               JOIN users u ON t.user_id = u.user_id
-                               WHERE e.start_datetime BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 1 HOUR)
-                               AND t.payment_status = 'completed'
-                               AND e.status = 'approved'
-                               AND NOT EXISTS (
-                                   SELECT 1 FROM notifications n 
-                                   WHERE n.user_id = t.user_id 
-                                   AND n.related_id = e.event_id 
-                                   AND n.type = 'event_reminder_1h'
-                                   AND n.created_at > DATE_SUB(NOW(), INTERVAL 2 HOUR)
-                               )");
-
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        while ($row = $result->fetch_assoc()) {
-                            $title = "Event Starting Soon: " . $row['title'];
-                            $message = "Your event '" . $row['title'] . "' starts in less than an hour! " .
-                                "Location: " . $row['venue'];
-
-                            $notificationResult = createNotification($conn, $row['user_id'], $title, $message, 'event_reminder_1h', $row['event_id']);
-
-                            if ($notificationResult['success']) {
-                                $remindersSent++;
-                            }
+                            // Process reminder sending here if needed
+                            $remindersSent++;
                         }
 
                         return $remindersSent;
                     } catch (Exception $e) {
                         error_log("Send automated reminders error: " . $e->getMessage());
                         return 0;
-                    }
-                }
-
-                /**
-                 * 🎨 Generate event QR code for check-in
-                 */
-                function generateEventCheckInQR($eventId)
-                {
-                    $qrData = json_encode([
-                        'type' => 'event_checkin',
-                        'event_id' => $eventId,
-                        'timestamp' => time(),
-                        'verification' => hash('sha256', $eventId . date('Y-m-d'))
-                    ]);
-
-                    return generateQRCode($qrData, 200);
-                }
-
-                /**
-                 * 🔍 Verify event check-in QR
-                 */
-                function verifyEventCheckInQR($qrData)
-                {
-                    try {
-                        $data = json_decode($qrData, true);
-
-                        if (!$data || $data['type'] !== 'event_checkin') {
-                            return ['success' => false, 'message' => 'Invalid QR code'];
-                        }
-
-                        $expectedVerification = hash('sha256', $data['event_id'] . date('Y-m-d'));
-
-                        if ($data['verification'] !== $expectedVerification) {
-                            return ['success' => false, 'message' => 'QR code expired or invalid'];
-                        }
-
-                        return [
-                            'success' => true,
-                            'event_id' => $data['event_id'],
-                            'message' => 'Valid check-in QR code'
-                        ];
-                    } catch (Exception $e) {
-                        return ['success' => false, 'message' => 'Invalid QR code format'];
-                    }
-                }
-
-                /**
-                 * 📊 Get real-time event statistics
-                 */
-                function getRealTimeEventStats($conn, $eventId)
-                {
-                    try {
-                        $stats = [];
-
-                        // Current registrations
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE event_id = ? AND payment_status = 'completed'");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $stats['current_registrations'] = $result->fetch_assoc()['count'];
-
-                        // Check-ins today (if event is today)
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE event_id = ? AND is_used = 1 AND DATE(used_at) = CURDATE()");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $stats['checkins_today'] = $result->fetch_assoc()['count'];
-
-                        // Recent registrations (last 24 hours)
-                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE event_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $stats['recent_registrations'] = $result->fetch_assoc()['count'];
-
-                        // Revenue today
-                        $stmt = $conn->prepare("SELECT SUM(price) as revenue FROM tickets WHERE event_id = ? AND payment_status = 'completed' AND DATE(created_at) = CURDATE()");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $stats['revenue_today'] = $result->fetch_assoc()['revenue'] ?? 0;
-
-                        return $stats;
-                    } catch (Exception $e) {
-                        error_log("Get real-time event stats error: " . $e->getMessage());
-                        return [];
-                    }
-                }
-
-                /**
-                 * 🎯 Get event registration statistics
-                 */
-                function getEventRegistrationStats($conn, $eventId)
-                {
-                    try {
-                        $stats = [];
-
-                        // Total registrations
-                        $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tickets WHERE event_id = ?");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $stats['total'] = $result->fetch_assoc()['total'];
-
-                        // By payment status
-                        $stmt = $conn->prepare("SELECT payment_status, COUNT(*) as count FROM tickets WHERE event_id = ? GROUP BY payment_status");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $stats['by_payment_status'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $stats['by_payment_status'][$row['payment_status']] = $row['count'];
-                        }
-
-                        // By department (if applicable)
-                        $stmt = $conn->prepare("SELECT u.department, COUNT(*) as count 
-                               FROM tickets t 
-                               JOIN users u ON t.user_id = u.user_id 
-                               WHERE t.event_id = ? AND u.department IS NOT NULL 
-                               GROUP BY u.department 
-                               ORDER BY count DESC");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $stats['by_department'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $stats['by_department'][] = $row;
-                        }
-
-                        // Registration timeline (last 30 days)
-                        $stmt = $conn->prepare("SELECT DATE(created_at) as date, COUNT(*) as count 
-                               FROM tickets 
-                               WHERE event_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                               GROUP BY DATE(created_at) 
-                               ORDER BY date");
-                        $stmt->bind_param("i", $eventId);
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-
-                        $stats['timeline'] = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $stats['timeline'][] = $row;
-                        }
-
-                        return $stats;
-                    } catch (Exception $e) {
-                        error_log("Get event registration stats error: " . $e->getMessage());
-                        return [];
                     }
                 }
 
@@ -2640,58 +1609,7 @@
                             $stmt->bind_param($types, ...$bindParams);
                         }
 
-                        $stmt->execute();
-                        $result = $stmt->get_result();
-                        $events = $result->fetch_all(MYSQLI_ASSOC);
-
-                        // Get total count for pagination
-                        $countSql = str_replace("SELECT DISTINCT e.*, u.first_name, u.last_name, COUNT(t.ticket_id) as registration_count, AVG(f.rating) as avg_rating", "SELECT COUNT(DISTINCT e.event_id) as total", $sql);
-                        $countSql = preg_replace('/GROUP BY.*?(?=ORDER BY|LIMIT|$)/s', '', $countSql);
-                        $countSql = preg_replace('/ORDER BY.*?(?=LIMIT|$)/s', '', $countSql);
-                        $countSql = preg_replace('/LIMIT.*$/', '', $countSql);
-
-                        $countParams = array_slice($bindParams, 0, -2); // Remove LIMIT and OFFSET params
-                        $countTypes = substr($types, 0, -2); // Remove 'ii' for LIMIT and OFFSET
-
-                        $countStmt = $conn->prepare($countSql);
-                        if (!empty($countParams)) {
-                            $countStmt->bind_param($countTypes, ...$countParams);
-                        }
-
-                        $countStmt->execute();
-                        $countResult = $countStmt->get_result();
-                        $totalEvents = $countResult->fetch_assoc()['total'];
-
-                        return [
-                            'events' => $events,
-                            'pagination' => [
-                                'current_page' => $page,
-                                'per_page' => $perPage,
-                                'total_pages' => ceil($totalEvents / $perPage),
-                                'total_records' => $totalEvents,
-                                'has_prev' => $page > 1,
-                                'has_next' => $page < ceil($totalEvents / $perPage)
-                            ]
-                        ];
-                    } catch (Exception $e) {
-                        error_log("Advanced search error: " . $e->getMessage());
-                        return [
-                            'events' => [],
-                            'pagination' => [
-                                'current_page' => 1,
-                                'per_page' => 12,
-                                'total_pages' => 0,
-                                'total_records' => 0,
-                                'has_prev' => false,
-                                'has_next' => false
-                            ]
-                        ];
-                    }
-                }
-
-                /**
-                 * 🎯 Get event recommendations for user
-                 */
+                
                 function getEventRecommendations($conn, $userId, $limit = 5)
                 {
                     try {
@@ -4324,9 +3242,8 @@
                         return array_reverse($logs);
                     } catch (Exception $e) {
                         error_log("Get system logs error: " . $e->getMessage());
-                        return [];
-                    }
-                }
+                // End of functions.php
+                ?>
 
                 /**
                  * 🎨 Format file size
@@ -4401,6 +3318,4 @@
                         'timestamp' => date('Y-m-d H:i:s')
                     ];
                 }
-
-                // End of functions.php
-                ?>
+?>
