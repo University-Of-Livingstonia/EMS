@@ -414,10 +414,10 @@ try {
                         <a class="nav-link" href="#">Contact</a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn-nav btn-login" href="#">Login</a>
+                        <a class="btn-nav btn-login" href="./auth/login.php">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn-nav btn-register" href="#">Register</a>
+                        <a class="btn-nav btn-register" href="./auth/register.php">Register</a>
                     </li>
                 </ul>
             </div>
