@@ -3,9 +3,10 @@
  * EMS - Student Profile Page
  * File: /views/user/profile.php
  */
-require_once '../../config/database.php';
-require_once '../../includes/session.php';
-require_once '../../models/User.php';
+
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/session.php';
+require_once dirname(__DIR__, 2) . '/models/User.php';
 
 // Initialize SessionManager
 $sessionManager = initializeSessionManager($conn);
