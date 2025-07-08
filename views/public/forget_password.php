@@ -1,7 +1,8 @@
 <?php
-require_once '../../config/database.php';
-require_once '../../models/User.php';
-require_once '../../includes/mailer.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/models/User.php';
+require_once dirname(__DIR__, 2) . '/includes/mailer.php';
+// ...existing code...
 
 $error = '';
 $success = '';

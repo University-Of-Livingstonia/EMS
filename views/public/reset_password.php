@@ -3,11 +3,12 @@
  * Ekwendeni Mighty Campus EMS - Reset Password UI (Styled)
  * File: /views/public/reset_password.php
  */
-require_once '../../config/database.php';
-require_once '../../models/User.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/models/User.php';
 
-// ✅ Set base folder (edit this only if folder name changes)
-$basePath = '/ATTACH-PROJECT/EMS';
+
+// Dynamically set base path for portability
+$basePath = dirname(dirname($_SERVER['PHP_SELF']));
 
 $error = '';
 $success = '';
