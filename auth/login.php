@@ -4,12 +4,19 @@
  * Ekwendeni Mighty Campus Event Management System
  */
 
+
+require_once dirname(__DIR__) . '/config/database.php';
 require_once '../includes/session.php';
 
+// Initialize SessionManager if not already done
+if (!isset($sessionManager)) {
+    $sessionManager = initializeSessionManager($conn);
+}
 // Redirect if already logged in
 if (isLoggedIn()) {
     $user = getCurrentUser();
-    header('Location: /EMS/dashboard/index.php');
+    $basePath = dirname(dirname($_SERVER['PHP_SELF']));
+    header('Location: ' . $basePath . '/dashboard/index.php');
     exit;
 }
 
@@ -26,13 +33,19 @@ if ($_POST && isset($_POST['login'])) {
         $error = 'Please fill in all fields';
     } else {
         $result = $sessionManager->login($email, $password, $remember);
+        echo '<pre>'; print_r($result); echo '</pre>'; exit; // <-- MOVE HERE
         
-        if ($result['success']) {
-            header('Location: ' . $result['redirect']);
-            exit;
+    if ($result['success']) {
+        $basePath = dirname(dirname($_SERVER['PHP_SELF']));
+        header('Location: ' . $basePath . '/dashboard/index.php');
+        exit;
         } else {
             $error = $result['message'];
+            
+// After $result = $sessionManager->login(...);
+echo '<pre>'; print_r($result); echo '</pre>';
         }
+        
     }
 }
 
