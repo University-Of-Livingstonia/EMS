@@ -1,3 +1,4 @@
+<UPDATED_CODE>
 <?php
 /**
  * 🎪 Organizer Dashboard - EMS
@@ -23,6 +24,9 @@ if (!in_array($currentUser['role'], ['organizer', 'admin'])) {
     header('Location: ../../dashboard/index.php');
     exit;
 }
+
+// Get current page for active navigation
+$currentPage = basename($_SERVER['PHP_SELF']);
 
 // Get organizer statistics
 $organizerStats = [];
@@ -84,6 +88,17 @@ try {
     $stmt->execute();
     $organizerStats['upcoming_events'] = $stmt->get_result()->fetch_assoc()['count'];
     
+    // Unread communications count
+    $stmt = $conn->prepare("
+        SELECT COUNT(*) as count 
+        FROM communications c
+        JOIN events e ON c.event_id = e.event_id
+        WHERE e.organizer_id = ? AND c.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
+    ");
+    $stmt->bind_param("i", $organizerId);
+    $stmt->execute();
+    $organizerStats['recent_communications'] = $stmt->get_result()->fetch_assoc()['count'];
+    
     // Recent activity
     $organizerStats['recent'] = [
         'events_this_month' => getSingleStat($conn, "SELECT COUNT(*) as count FROM events WHERE organizer_id = $organizerId AND MONTH(created_at) = MONTH(NOW())"),
@@ -98,6 +113,7 @@ try {
         'total_events' => 0,
         'tickets' => ['total_tickets' => 0, 'paid_tickets' => 0, 'total_revenue' => 0, 'pending_revenue' => 0],
         'upcoming_events' => 0,
+        'recent_communications' => 0,
         'recent' => ['events_this_month' => 0, 'tickets_this_week' => 0, 'revenue_this_month' => 0]
     ];
 }
@@ -355,6 +371,20 @@ try {
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: 600;
+        }
+        
+        .nav-badge.pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .nav-badge.new {
+            background: var(--organizer-success);
         }
         
         /* 📱 Main Content */
@@ -1028,13 +1058,13 @@ try {
             <div class="nav-section">
                 <div class="nav-section-title">Dashboard</div>
                 <div class="organizer-nav-item">
-                    <a href="dashboard.php" class="organizer-nav-link active">
+                    <a href="dashboard.php" class="organizer-nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-tachometer-alt"></i>
                         <span class="nav-text">Overview</span>
                     </a>
                 </div>
                 <div class="organizer-nav-item">
-                    <a href="analytics.php" class="organizer-nav-link">
+                    <a href="analytics.php" class="organizer-nav-link <?= $currentPage === 'analytics.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <span class="nav-text">Analytics</span>
                     </a>
@@ -1044,23 +1074,25 @@ try {
             <div class="nav-section">
                 <div class="nav-section-title">Events</div>
                 <div class="organizer-nav-item">
-                    <a href="events.php" class="organizer-nav-link">
+                    <a href="events.php" class="organizer-nav-link <?= $currentPage === 'events.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-calendar-alt"></i>
                         <span class="nav-text">My Events</span>
                         <span class="nav-badge"><?= $organizerStats['total_events'] ?></span>
                     </a>
                 </div>
                 <div class="organizer-nav-item">
-                    <a href="create_event.php" class="organizer-nav-link">
+                    <a href="create_event.php" class="organizer-nav-link <?= $currentPage === 'create_event.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-plus-circle"></i>
                         <span class="nav-text">Create Event</span>
                     </a>
                 </div>
                 <div class="organizer-nav-item">
-                    <a href="pending_events.php" class="organizer-nav-link">
+                    <a href="pending_events.php" class="organizer-nav-link <?= $currentPage === 'pending_events.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-clock"></i>
                         <span class="nav-text">Pending Approval</span>
-                        <span class="nav-badge"><?= $organizerStats['events']['pending'] ?></span>
+                        <?php if ($organizerStats['events']['pending'] > 0): ?>
+                            <span class="nav-badge pulse"><?= $organizerStats['events']['pending'] ?></span>
+                        <?php endif; ?>
                     </a>
                 </div>
             </div>
@@ -1068,21 +1100,34 @@ try {
             <div class="nav-section">
                 <div class="nav-section-title">Management</div>
                 <div class="organizer-nav-item">
-                    <a href="attendees.php" class="organizer-nav-link">
+                    <a href="attendees.php" class="organizer-nav-link <?= $currentPage === 'attendees.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users"></i>
                         <span class="nav-text">Attendees</span>
+                        <span class="nav-badge"><?= $organizerStats['tickets']['total_tickets'] ?></span>
                     </a>
                 </div>
                 <div class="organizer-nav-item">
-                    <a href="tickets.php" class="organizer-nav-link">
+                    <a href="tickets.php" class="organizer-nav-link <?= $currentPage === 'tickets.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-ticket-alt"></i>
                         <span class="nav-text">Tickets</span>
+                        <?php if ($organizerStats['tickets']['paid_tickets'] > 0): ?>
+                            <span class="nav-badge new"><?= $organizerStats['tickets']['paid_tickets'] ?></span>
+                        <?php endif; ?>
                     </a>
                 </div>
                 <div class="organizer-nav-item">
-                    <a href="revenue.php" class="organizer-nav-link">
+                    <a href="revenue.php" class="organizer-nav-link <?= $currentPage === 'revenue.php' ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-dollar-sign"></i>
                         <span class="nav-text">Revenue</span>
+                    </a>
+                </div>
+                <div class="organizer-nav-item">
+                    <a href="communications.php" class="organizer-nav-link <?= $currentPage === 'communications.php' ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-envelope"></i>
+                        <span class="nav-text">Communications</span>
+                        <?php if ($organizerStats['recent_communications'] > 0): ?>
+                            <span class="nav-badge new"><?= $organizerStats['recent_communications'] ?></span>
+                        <?php endif; ?>
                     </a>
                 </div>
             </div>
@@ -1416,698 +1461,4 @@ try {
                                 <i class="fas fa-users"></i>
                                 Recent Attendees
                             </h5>
-                            <p class="organizer-card-subtitle">Latest registrations across your events</p>
-                        </div>
-                        <div class="organizer-card-body">
-                            <?php if (empty($recentAttendees)): ?>
-                                <div class="text-center py-4">
-                                    <i class="fas fa-user-plus fa-2x text-muted mb-3"></i>
-                                    <p class="text-muted">No attendees yet</p>
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="organizer-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Attendee</th>
-                                                <th>Event</th>
-                                                <th>Registration Date</th>
-                                                <th>Payment Status</th>
-                                                <th>Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($recentAttendees as $attendee): ?>
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="attendee-avatar-small">
-                                                                <?= strtoupper(substr($attendee['first_name'], 0, 1) . substr($attendee['last_name'], 0, 1)) ?>
-                                                            </div>
-                                                            <div>
-                                                                <div class="fw-bold"><?= htmlspecialchars($attendee['first_name'] . ' ' . $attendee['last_name']) ?></div>
-                                                                <small class="text-muted"><?= htmlspecialchars($attendee['email']) ?></small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td><?= htmlspecialchars($attendee['event_title']) ?></td>
-                                                                                                        <td><?= date('M j, Y', strtotime($attendee['created_at'])) ?></td>
-                                                    <td>
-                                                        <span class="payment-badge payment-<?= $attendee['payment_status'] ?>">
-                                                            <?= ucfirst($attendee['payment_status']) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td>K<?= number_format($attendee['price'], 2) ?></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 🎯 Performance Insights -->
-                <div class="col-lg-4">
-                    <div class="organizer-card slide-in-right">
-                        <div class="organizer-card-header">
-                            <h5 class="organizer-card-title">
-                                <i class="fas fa-trophy"></i>
-                                Performance Insights
-                            </h5>
-                        </div>
-                        <div class="organizer-card-body">
-                            <?php if ($performanceInsights['best_event']): ?>
-                                <div class="insight-card">
-                                    <div class="insight-header">
-                                        <div class="insight-icon">
-                                            <i class="fas fa-star"></i>
-                                        </div>
-                                        <div class="insight-title">Best Performing Event</div>
-                                    </div>
-                                    <div class="insight-value"><?= $performanceInsights['best_event']['registrations'] ?></div>
-                                    <div class="insight-description">
-                                        "<?= htmlspecialchars($performanceInsights['best_event']['title']) ?>" 
-                                        generated K<?= number_format($performanceInsights['best_event']['revenue'], 2) ?> revenue
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <?php if ($performanceInsights['averages']): ?>
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <h4 class="text-primary mb-1"><?= round($performanceInsights['averages']['avg_registrations']) ?></h4>
-                                            <small class="text-muted">Avg. Attendees</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="text-center p-3 bg-light rounded">
-                                            <h4 class="text-success mb-1">K<?= number_format($performanceInsights['averages']['avg_revenue'], 0) ?></h4>
-                                            <small class="text-muted">Avg. Revenue</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span>Payment Completion Rate</span>
-                                    <span class="fw-bold">
-                                        <?= $organizerStats['tickets']['total_tickets'] > 0 ? 
-                                            round(($organizerStats['tickets']['paid_tickets'] / $organizerStats['tickets']['total_tickets']) * 100) : 0 ?>%
-                                    </span>
-                                </div>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" style="width: <?= $organizerStats['tickets']['total_tickets'] > 0 ? 
-                                        round(($organizerStats['tickets']['paid_tickets'] / $organizerStats['tickets']['total_tickets']) * 100) : 0 ?>%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 🔔 Notification Panel -->
-    <div class="notification-panel" id="notificationPanel">
-        <div class="notification-header">
-            <h6><i class="fas fa-bell"></i> Notifications</h6>
-            <button class="btn-close" onclick="toggleNotifications()"></button>
-        </div>
-        <div class="notification-body">
-            <div class="notification-item">
-                <div class="notification-icon bg-success">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">Event Approved</div>
-                    <div class="notification-text">Your event "Tech Conference 2024" has been approved!</div>
-                    <div class="notification-time">2 hours ago</div>
-                </div>
-            </div>
-            
-            <div class="notification-item">
-                <div class="notification-icon bg-info">
-                    <i class="fas fa-user-plus"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">New Registration</div>
-                    <div class="notification-text">John Doe registered for your event</div>
-                    <div class="notification-time">4 hours ago</div>
-                </div>
-            </div>
-            
-            <div class="notification-item">
-                <div class="notification-icon bg-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">Payment Pending</div>
-                    <div class="notification-text">5 payments are still pending for your events</div>
-                    <div class="notification-time">1 day ago</div>
-                </div>
-            </div>
-        </div>
-        <div class="notification-footer">
-            <a href="notifications.php" class="btn btn-sm btn-primary w-100">View All Notifications</a>
-        </div>
-    </div>
-    
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // 🎪 Organizer Dashboard JavaScript
-        
-        // Sidebar Toggle
-        function toggleSidebar() {
-            const sidebar = document.getElementById('organizerSidebar');
-            const main = document.getElementById('organizerMain');
-            
-            sidebar.classList.toggle('collapsed');
-            main.classList.toggle('expanded');
-        }
-        
-        // Notification Panel Toggle
-        function toggleNotifications() {
-            const panel = document.getElementById('notificationPanel');
-            panel.classList.toggle('show');
-        }
-        
-        // Close notification panel when clicking outside
-        document.addEventListener('click', function(e) {
-            const panel = document.getElementById('notificationPanel');
-            const btn = document.querySelector('.notification-btn');
-            
-            if (!panel.contains(e.target) && !btn.contains(e.target)) {
-                panel.classList.remove('show');
-            }
-        });
-        
-        // Search functionality
-        document.getElementById('organizerSearch').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const eventCards = document.querySelectorAll('.organizer-event-card');
-            
-            eventCards.forEach(card => {
-                const title = card.querySelector('.event-title').textContent.toLowerCase();
-                const location = card.querySelector('.event-meta-item:nth-child(3) span').textContent.toLowerCase();
-                
-                if (title.includes(searchTerm) || location.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-        
-        // Submit event for approval
-        function submitForApproval(eventId) {
-            if (confirm('Are you sure you want to submit this event for approval?')) {
-                fetch('../../api/submit_event.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ event_id: eventId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Event submitted for approval successfully!', 'success');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showToast(data.message || 'Error submitting event', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Network error occurred', 'error');
-                });
-            }
-        }
-        
-        // Toast notification system
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `
-                <div class="toast-content">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
-                }
-            }, 5000);
-        }
-        
-        // Initialize Charts
-        document.addEventListener('DOMContentLoaded', function() {
-            // Performance Chart
-            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-            new Chart(performanceCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Event Registrations',
-                        data: [12, 19, 15, 25, 22, 30],
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Revenue (K)',
-                        data: [5, 8, 6, 12, 10, 15],
-                        borderColor: '#f093fb',
-                        backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Event Status Chart
-            const statusCtx = document.getElementById('eventStatusChart').getContext('2d');
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Approved', 'Pending', 'Draft'],
-                    datasets: [{
-                        data: [
-                            <?= $organizerStats['events']['approved'] ?>,
-                            <?= $organizerStats['events']['pending'] ?>,
-                            <?= $organizerStats['events']['draft'] ?>
-                        ],
-                        backgroundColor: ['#4CAF50', '#ff9800', '#2196F3'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        });
-        
-        // Mobile responsiveness
-        if (window.innerWidth <= 768) {
-            document.getElementById('organizerSidebar').classList.add('collapsed');
-            document.getElementById('organizerMain').classList.add('expanded');
-        }
-        
-        // Add additional styles for toast notifications
-        const additionalStyles = `
-            <style>
-                .toast-notification {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: white;
-                    border-radius: 10px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-                    padding: 1rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    min-width: 300px;
-                    z-index: 9999;
-                    animation: slideInRight 0.3s ease-out;
-                }
-                
-                .toast-success {
-                    border-left: 4px solid #4CAF50;
-                }
-                
-                .toast-error {
-                    border-left: 4px solid #f44336;
-                }
-                
-                .toast-info {
-                    border-left: 4px solid #2196F3;
-                }
-                
-                .toast-content {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
-                
-                .toast-content i {
-                    font-size: 1.2rem;
-                }
-                
-                .toast-success .toast-content i {
-                    color: #4CAF50;
-                }
-                
-                .toast-error .toast-content i {
-                    color: #f44336;
-                }
-                
-                .toast-info .toast-content i {
-                    color: #2196F3;
-                }
-                
-                .toast-close {
-                    background: none;
-                    border: none;
-                    font-size: 1rem;
-                    color: #999;
-                    cursor: pointer;
-                    padding: 0.2rem;
-                }
-                
-                .toast-close:hover {
-                    color: #333;
-                }
-                
-                .notification-panel {
-                    position: fixed;
-                    top: 0;
-                    right: -400px;
-                    width: 400px;
-                    height: 100vh;
-                    background: white;
-                    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-                    transition: right 0.3s ease;
-                    z-index: 999;
-                    display: flex;
-                    flex-direction: column;
-                }
-                
-                .notification-panel.show {
-                    right: 0;
-                }
-                
-                .notification-header {
-                    padding: 1.5rem;
-                    border-bottom: 1px solid var(--border-color);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                                        background: var(--organizer-primary);
-                    color: white;
-                }
-                
-                .notification-header h6 {
-                    margin: 0;
-                    font-weight: 600;
-                }
-                
-                .btn-close {
-                    background: none;
-                    border: none;
-                    color: white;
-                    font-size: 1.2rem;
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 50%;
-                    transition: background 0.3s ease;
-                }
-                
-                .btn-close:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                }
-                
-                .notification-body {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 1rem;
-                }
-                
-                .notification-item {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 1rem;
-                    padding: 1rem;
-                    border-radius: 10px;
-                    margin-bottom: 0.5rem;
-                    transition: background 0.3s ease;
-                }
-                
-                .notification-item:hover {
-                    background: #f8f9fa;
-                }
-                
-                .notification-icon {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 0.9rem;
-                    flex-shrink: 0;
-                }
-                
-                .notification-content {
-                    flex: 1;
-                }
-                
-                .notification-title {
-                    font-weight: 600;
-                    color: var(--text-primary);
-                    margin-bottom: 0.3rem;
-                }
-                
-                .notification-text {
-                    font-size: 0.9rem;
-                    color: var(--text-secondary);
-                    margin-bottom: 0.5rem;
-                }
-                
-                .notification-time {
-                    font-size: 0.8rem;
-                    color: #999;
-                }
-                
-                .notification-footer {
-                    padding: 1rem;
-                    border-top: 1px solid var(--border-color);
-                }
-                
-                .notification-btn {
-                    position: relative;
-                    background: none;
-                    border: none;
-                    font-size: 1.2rem;
-                    color: var(--text-secondary);
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 50%;
-                    transition: all 0.3s ease;
-                }
-                
-                .notification-btn:hover {
-                    background: #f8f9fa;
-                    color: var(--text-primary);
-                }
-                
-                .notification-count {
-                    position: absolute;
-                    top: -5px;
-                    right: -5px;
-                    background: #f44336;
-                    color: white;
-                    border-radius: 50%;
-                    width: 20px;
-                    height: 20px;
-                    font-size: 0.7rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 600;
-                }
-                
-                .sidebar-toggle {
-                    background: none;
-                    border: none;
-                    font-size: 1.2rem;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    border-radius: 5px;
-                    margin-right: 1rem;
-                    transition: background 0.3s ease;
-                }
-                
-                .sidebar-toggle:hover {
-                    background: #f8f9fa;
-                }
-                
-                .organizer-title-section {
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .chart-legend {
-                    margin-top: 1rem;
-                }
-                
-                .legend-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    margin-bottom: 0.5rem;
-                    font-size: 0.9rem;
-                }
-                
-                .legend-color {
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 2px;
-                }
-                
-                @keyframes slideInRight {
-                    from {
-                        opacity: 0;
-                        transform: translateX(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateX(0);
-                    }
-                }
-                
-                @media (max-width: 768px) {
-                    .notification-panel {
-                        width: 100%;
-                        right: -100%;
-                    }
-                    
-                    .toast-notification {
-                        right: 10px;
-                        left: 10px;
-                        min-width: auto;
-                    }
-                }
-            </style>
-        `;
-        
-        document.head.insertAdjacentHTML('beforeend', additionalStyles);
-        
-        // Auto-refresh data every 5 minutes
-        setInterval(function() {
-            // Refresh notification count
-            fetch('../../api/get_notifications_count.php')
-                .then(response => response.json())
-                .then(data => {
-                    const countElement = document.querySelector('.notification-count');
-                    if (countElement && data.count > 0) {
-                        countElement.textContent = data.count;
-                        countElement.style.display = 'flex';
-                    } else if (countElement) {
-                        countElement.style.display = 'none';
-                    }
-                })
-                .catch(error => console.error('Error fetching notifications:', error));
-        }, 300000); // 5 minutes
-        
-        // Initialize tooltips if Bootstrap is available
-        if (typeof bootstrap !== 'undefined') {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-        }
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + N for new event
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                e.preventDefault();
-                window.location.href = 'create_event.php';
-            }
-            
-            // Ctrl/Cmd + E for events list
-            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-                e.preventDefault();
-                window.location.href = 'events.php';
-            }
-            
-            // Escape to close notification panel
-            if (e.key === 'Escape') {
-                document.getElementById('notificationPanel').classList.remove('show');
-            }
-        });
-        
-        // Add loading states for buttons
-        document.querySelectorAll('.organizer-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (this.classList.contains('loading')) return;
-                
-                const originalText = this.innerHTML;
-                this.classList.add('loading');
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-                
-                // Reset after 3 seconds (adjust based on your needs)
-                setTimeout(() => {
-                    this.classList.remove('loading');
-                    this.innerHTML = originalText;
-                }, 3000);
-            });
-        });
-        
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-        
-        console.log('🎪 Organizer Dashboard Loaded Successfully!');
-    </script>
-</body>
-</html>
-
-
-
+                           
