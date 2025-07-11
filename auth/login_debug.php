@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                         $redirect_url = '../admin/dashboard.php';
                         $debug_info[] = "Should redirect to: $redirect_url (ADMIN)";
                     } elseif ($user['role'] === 'organizer') {
-                        $redirect_url = '../dashboard/index.php';
+                        $redirect_url = '../views/organizer/dashboard.php';
                         $debug_info[] = "Should redirect to: $redirect_url (ORGANIZER)";
                     } else {
                         $redirect_url = '../dashboard/index.php';
