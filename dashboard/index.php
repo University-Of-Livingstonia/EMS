@@ -21,8 +21,43 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+// Helper functions for dashboard
+if (!function_exists('formatCurrency')) {
+    function formatCurrency($amount) {
+        return 'K' . number_format($amount, 0);
+    }
+}
+
+if (!function_exists('formatDateTime')) {
+    function formatDateTime($datetime, $format = 'Y-m-d H:i:s') {
+        return date($format, strtotime($datetime));
+    }
+}
+
+if (!function_exists('timeAgo')) {
+    function timeAgo($datetime) {
+        $time = time() - strtotime($datetime);
+        
+        if ($time < 60) return 'just now';
+        if ($time < 3600) return floor($time/60) . ' minutes ago';
+        if ($time < 86400) return floor($time/3600) . ' hours ago';
+        if ($time < 2592000) return floor($time/86400) . ' days ago';
+        if ($time < 31536000) return floor($time/2592000) . ' months ago';
+        return floor($time/31536000) . ' years ago';
+    }
+}
+
+if (!function_exists('getSingleStat')) {
+    function getSingleStat($conn, $query) {
+        $result = $conn->query($query);
+        if ($result && $row = $result->fetch_assoc()) {
+            return $row['count'] ?? 0;
+        }
+        return 0;
+    }
+}
+
 // Get user statistics
-// Define getDashboardStats if not already defined
 if (!function_exists('getDashboardStats')) {
     /**
      * Get dashboard statistics for the user.
@@ -40,38 +75,57 @@ if (!function_exists('getDashboardStats')) {
             'total_spent' => 0
         ];
 
-        // Registered events
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ?");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $stmt->bind_result($stats['registered_events']);
-        $stmt->fetch();
-        $stmt->close();
+        try {
+            // Registered events
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE user_id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $userId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $stats['registered_events'] = $row['count'];
+                }
+                $stmt->close();
+            }
 
-        // Attended events (assuming you have an 'attended' status or similar)
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM tickets WHERE user_id = ? AND status = 'attended'");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $stmt->bind_result($stats['attended_events']);
-        $stmt->fetch();
-        $stmt->close();
+            // Attended events (assuming you have an 'attended' status or similar)
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE user_id = ? AND status = 'attended'");
+            if ($stmt) {
+                $stmt->bind_param("i", $userId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $stats['attended_events'] = $row['count'];
+                }
+                $stmt->close();
+            }
 
-        // Upcoming events
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM tickets t JOIN events e ON t.event_id = e.event_id WHERE t.user_id = ? AND e.start_datetime > NOW()");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $stmt->bind_result($stats['upcoming_events']);
-        $stmt->fetch();
-        $stmt->close();
+            // Upcoming events
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets t JOIN events e ON t.event_id = e.event_id WHERE t.user_id = ? AND e.start_datetime > NOW()");
+            if ($stmt) {
+                $stmt->bind_param("i", $userId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $stats['upcoming_events'] = $row['count'];
+                }
+                $stmt->close();
+            }
 
-        // Total spent (assuming you have a 'price' column in tickets or events)
-        $stmt = $conn->prepare("SELECT SUM(t.amount_paid) FROM tickets t WHERE t.user_id = ? AND t.payment_status = 'paid'");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
-        $stmt->bind_result($totalSpent);
-        $stmt->fetch();
-        $stats['total_spent'] = $totalSpent ?: 0;
-        $stmt->close();
+            // Total spent (assuming you have a 'price' column in tickets or events)
+            $stmt = $conn->prepare("SELECT COALESCE(SUM(t.amount_paid), 0) as total FROM tickets t WHERE t.user_id = ? AND t.payment_status = 'paid'");
+            if ($stmt) {
+                $stmt->bind_param("i", $userId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $stats['total_spent'] = $row['total'] ?: 0;
+                }
+                $stmt->close();
+            }
+        } catch (Exception $e) {
+            error_log("Dashboard stats error: " . $e->getMessage());
+        }
 
         return $stats;
     }
@@ -94,9 +148,12 @@ try {
         ORDER BY e.start_datetime ASC 
         LIMIT 5
     ");
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $upcomingEvents = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    if ($stmt) {
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $upcomingEvents = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+    }
 } catch (Exception $e) {
     error_log("Upcoming events error: " . $e->getMessage());
 }
@@ -112,15 +169,17 @@ try {
         ORDER BY t.created_at DESC 
         LIMIT 10
     ");
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $recentActivity = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    if ($stmt) {
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $recentActivity = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+    }
 } catch (Exception $e) {
     error_log("Recent activity error: " . $e->getMessage());
 }
 
 // Get notifications
-// Define getUserNotifications if not already defined
 if (!function_exists('getUserNotifications')) {
     /**
      * Get recent notifications for a user.
@@ -132,14 +191,21 @@ if (!function_exists('getUserNotifications')) {
     function getUserNotifications($conn, $userId, $limit = 5)
     {
         $notifications = [];
-        $stmt = $conn->prepare("SELECT notification_id, title, message, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?");
-        $stmt->bind_param("ii", $userId, $limit);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-            $notifications[] = $row;
+        try {
+            $stmt = $conn->prepare("SELECT notification_id, title, message, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?");
+            if ($stmt) {
+                $stmt->bind_param("ii", $userId, $limit);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $notifications[] = $row;
+                }
+                $stmt->close();
+            }
+        } catch (Exception $e) {
+            error_log("Notifications error: " . $e->getMessage());
+            // Return empty array if notifications table doesn't exist
         }
-        $stmt->close();
         return $notifications;
     }
 }
