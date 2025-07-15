@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 📖 About Page - EMS
  * Ekwendeni Mighty Campus Event Management System
@@ -23,13 +24,13 @@ $aboutStats = [];
 try {
     $stmt = $conn->query("SELECT COUNT(*) as total_events FROM events WHERE status = 'approved'");
     $aboutStats['total_events'] = $stmt->fetch_assoc()['total_events'];
-    
+
     $stmt = $conn->query("SELECT COUNT(*) as total_users FROM users WHERE role != 'admin'");
     $aboutStats['total_users'] = $stmt->fetch_assoc()['total_users'];
-    
+
     $stmt = $conn->query("SELECT COUNT(*) as total_tickets FROM tickets");
     $aboutStats['total_tickets'] = $stmt->fetch_assoc()['total_tickets'];
-    
+
     $stmt = $conn->query("SELECT COUNT(*) as active_organizers FROM users WHERE role = 'organizer'");
     $aboutStats['active_organizers'] = $stmt->fetch_assoc()['active_organizers'];
 } catch (Exception $e) {
@@ -39,21 +40,22 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About Us - EMS | Ekwendeni Mighty Campus</title>
-    
+
     <!-- Meta Tags -->
     <meta name="description" content="Learn about EMS - Ekwendeni Mighty Campus Event Management System. Discover our mission, vision, and the team behind the platform.">
     <meta name="keywords" content="about, EMS, Ekwendeni, campus, event management, university, team">
     <meta name="author" content="Ekwendeni Mighty Campus">
-    
+
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Custom Styles -->
     <style>
         :root {
@@ -71,20 +73,20 @@ try {
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Poppins', sans-serif;
             line-height: 1.6;
             color: var(--text-dark);
             overflow-x: hidden;
         }
-        
+
         /* 🎨 Navigation Bar */
         .navbar {
             background: rgba(255, 255, 255, 0.95) !important;
@@ -93,12 +95,12 @@ try {
             transition: all 0.3s ease;
             padding: 1rem 0;
         }
-        
+
         .navbar.scrolled {
             padding: 0.5rem 0;
             background: rgba(255, 255, 255, 0.98) !important;
         }
-        
+
         .navbar-brand {
             font-weight: 800;
             font-size: 1.5rem;
@@ -107,20 +109,20 @@ try {
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .navbar-nav .nav-link {
             font-weight: 500;
             margin: 0 0.5rem;
             transition: all 0.3s ease;
             position: relative;
         }
-        
+
         .navbar-nav .nav-link:hover,
         .navbar-nav .nav-link.active {
             color: #667eea !important;
             transform: translateY(-2px);
         }
-        
+
         .navbar-nav .nav-link::after {
             content: '';
             position: absolute;
@@ -132,12 +134,12 @@ try {
             transition: all 0.3s ease;
             transform: translateX(-50%);
         }
-        
+
         .navbar-nav .nav-link:hover::after,
         .navbar-nav .nav-link.active::after {
             width: 100%;
         }
-        
+
         .btn-nav {
             padding: 0.5rem 1.5rem;
             border-radius: 25px;
@@ -145,31 +147,31 @@ try {
             transition: all 0.3s ease;
             margin-left: 0.5rem;
         }
-        
+
         .btn-login {
             background: transparent;
             border: 2px solid #667eea;
             color: #667eea;
         }
-        
+
         .btn-login:hover {
             background: #667eea;
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
-        
+
         .btn-register {
             background: var(--primary-gradient);
             border: none;
             color: white;
         }
-        
+
         .btn-register:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
-        
+
         /* 🎓 About Hero Section */
         .about-hero {
             background: var(--primary-gradient);
@@ -178,7 +180,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .about-hero::before {
             content: '';
             position: absolute;
@@ -189,25 +191,32 @@ try {
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="60" cy="40" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
             animation: float 20s ease-in-out infinite;
         }
-        
+
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
         }
-        
+
         .about-hero-content {
             position: relative;
             z-index: 2;
             text-align: center;
         }
-        
+
         .about-hero h1 {
             font-size: 3.5rem;
             font-weight: 800;
             margin-bottom: 1.5rem;
             line-height: 1.2;
         }
-        
+
         .about-hero .lead {
             font-size: 1.3rem;
             margin-bottom: 2rem;
@@ -216,7 +225,7 @@ try {
             margin-left: auto;
             margin-right: auto;
         }
-        
+
         /* 📊 Stats Section */
         .stats-section {
             background: var(--light-bg);
@@ -225,7 +234,7 @@ try {
             position: relative;
             z-index: 3;
         }
-        
+
         .stat-card {
             background: white;
             padding: 2rem;
@@ -237,7 +246,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -247,12 +256,12 @@ try {
             height: 4px;
             background: var(--primary-gradient);
         }
-        
+
         .stat-card:hover {
             transform: translateY(-10px);
             box-shadow: var(--shadow-hover);
         }
-        
+
         .stat-icon {
             font-size: 3rem;
             background: var(--primary-gradient);
@@ -261,14 +270,14 @@ try {
             background-clip: text;
             margin-bottom: 1rem;
         }
-        
+
         .stat-number {
             font-size: 2.5rem;
             font-weight: 800;
             color: var(--text-dark);
             margin-bottom: 0.5rem;
         }
-        
+
         .stat-label {
             color: var(--text-muted);
             font-weight: 500;
@@ -276,18 +285,18 @@ try {
             letter-spacing: 1px;
             font-size: 0.9rem;
         }
-        
+
         /* 🎯 Mission & Vision Section */
         .mission-vision {
             padding: 5rem 0;
             background: white;
         }
-        
+
         .section-title {
             text-align: center;
             margin-bottom: 3rem;
         }
-        
+
         .section-title h2 {
             font-size: 2.5rem;
             font-weight: 700;
@@ -297,14 +306,14 @@ try {
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .section-title p {
             font-size: 1.1rem;
             color: var(--text-muted);
             max-width: 600px;
             margin: 0 auto;
         }
-        
+
         .mission-card {
             background: white;
             border-radius: 20px;
@@ -315,7 +324,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .mission-card::before {
             content: '';
             position: absolute;
@@ -324,60 +333,60 @@ try {
             right: 0;
             height: 5px;
         }
-        
+
         .mission-card.mission::before {
             background: var(--success-gradient);
         }
-        
+
         .mission-card.vision::before {
             background: var(--warning-gradient);
         }
-        
+
         .mission-card:hover {
             transform: translateY(-10px);
             box-shadow: var(--shadow-hover);
         }
-        
+
         .mission-icon {
             font-size: 4rem;
             margin-bottom: 2rem;
             text-align: center;
         }
-        
+
         .mission-icon.mission {
             background: var(--success-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .mission-icon.vision {
             background: var(--warning-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .mission-title {
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
             text-align: center;
         }
-        
+
         .mission-text {
             font-size: 1.1rem;
             line-height: 1.8;
             color: var(--text-muted);
             text-align: center;
         }
-        
+
         /* 👥 Team Section */
         .team-section {
             padding: 5rem 0;
             background: var(--light-bg);
         }
-        
+
         .team-card {
             background: white;
             border-radius: 20px;
@@ -389,12 +398,12 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .team-card:hover {
             transform: translateY(-10px);
             box-shadow: var(--shadow-hover);
         }
-        
+
         .team-avatar {
             width: 120px;
             height: 120px;
@@ -409,35 +418,35 @@ try {
             color: white;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
-        
+
         .team-name {
             font-size: 1.3rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             color: var(--text-dark);
         }
-        
+
         .team-role {
             color: var(--text-muted);
             font-weight: 500;
             margin-bottom: 1rem;
             text-transform: uppercase;
-                        letter-spacing: 1px;
+            letter-spacing: 1px;
             font-size: 0.9rem;
         }
-        
+
         .team-bio {
             color: var(--text-muted);
             line-height: 1.6;
             margin-bottom: 1.5rem;
         }
-        
+
         .team-social {
             display: flex;
             justify-content: center;
             gap: 1rem;
         }
-        
+
         .social-link {
             width: 40px;
             height: 40px;
@@ -450,30 +459,30 @@ try {
             text-decoration: none;
             transition: all 0.3s ease;
         }
-        
+
         .social-link:hover {
             background: var(--primary-gradient);
             color: white;
             transform: translateY(-3px);
         }
-        
+
         /* 🎯 Features Section */
         .features-section {
             padding: 5rem 0;
             background: white;
         }
-        
+
         .feature-card {
             text-align: center;
             padding: 2rem;
             margin-bottom: 2rem;
             transition: all 0.3s ease;
         }
-        
+
         .feature-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .feature-icon {
             width: 80px;
             height: 80px;
@@ -486,35 +495,35 @@ try {
             color: white;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-        
+
         .feature-icon.primary {
             background: var(--primary-gradient);
         }
-        
+
         .feature-icon.success {
             background: var(--success-gradient);
         }
-        
+
         .feature-icon.warning {
             background: var(--warning-gradient);
         }
-        
+
         .feature-icon.danger {
             background: var(--danger-gradient);
         }
-        
+
         .feature-title {
             font-size: 1.3rem;
             font-weight: 700;
             margin-bottom: 1rem;
             color: var(--text-dark);
         }
-        
+
         .feature-text {
             color: var(--text-muted);
             line-height: 1.6;
         }
-        
+
         /* 🎪 CTA Section */
         .cta-section {
             background: var(--primary-gradient);
@@ -524,7 +533,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .cta-section::before {
             content: '';
             position: absolute;
@@ -535,24 +544,24 @@ try {
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
             animation: float 15s ease-in-out infinite;
         }
-        
+
         .cta-content {
             position: relative;
             z-index: 2;
         }
-        
+
         .cta-title {
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 1.5rem;
         }
-        
+
         .cta-text {
             font-size: 1.2rem;
             margin-bottom: 2rem;
             opacity: 0.9;
         }
-        
+
         .btn-cta {
             padding: 1rem 2rem;
             font-size: 1.1rem;
@@ -563,99 +572,102 @@ try {
             text-decoration: none;
             display: inline-block;
         }
-        
+
         .btn-primary-cta {
             background: white;
             color: #667eea;
             border: none;
         }
-        
+
         .btn-primary-cta:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
             color: #667eea;
         }
-        
+
         .btn-outline-cta {
             background: transparent;
             color: white;
             border: 2px solid white;
         }
-        
+
         .btn-outline-cta:hover {
             background: white;
             color: #667eea;
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
         }
-        
+
         /* 📱 Responsive Design */
         @media (max-width: 768px) {
             .about-hero h1 {
                 font-size: 2.5rem;
             }
-            
+
             .about-hero .lead {
                 font-size: 1.1rem;
             }
-            
+
             .section-title h2 {
                 font-size: 2rem;
             }
-            
+
             .mission-card {
                 padding: 2rem;
             }
-            
+
             .cta-title {
                 font-size: 2rem;
             }
-            
+
             .cta-text {
                 font-size: 1rem;
             }
         }
-        
+
         /* 🎨 Animations */
         .fade-in-up {
             animation: fadeInUp 0.8s ease-out;
         }
-        
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .slide-in-left {
             animation: slideInLeft 0.8s ease-out;
         }
-        
+
         @keyframes slideInLeft {
             from {
                 opacity: 0;
                 transform: translateX(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
-        
+
         .slide-in-right {
             animation: slideInRight 0.8s ease-out;
         }
-        
+
         @keyframes slideInRight {
             from {
                 opacity: 0;
                 transform: translateX(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -663,6 +675,7 @@ try {
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
@@ -758,7 +771,7 @@ try {
                 <h2>Our Mission & Vision</h2>
                 <p>Driving excellence in campus event management through innovation and community engagement</p>
             </div>
-            
+
             <div class="row">
                 <div class="col-lg-6">
                     <div class="mission-card mission slide-in-left">
@@ -767,8 +780,8 @@ try {
                         </div>
                         <h3 class="mission-title">Our Mission</h3>
                         <p class="mission-text">
-                            To provide a comprehensive, user-friendly platform that streamlines event management 
-                            at Ekwendeni Mighty Campus, fostering community engagement, academic excellence, 
+                            To provide a comprehensive, user-friendly platform that streamlines event management
+                            at Ekwendeni Mighty Campus, fostering community engagement, academic excellence,
                             and memorable experiences for all students, faculty, and staff.
                         </p>
                     </div>
@@ -780,8 +793,8 @@ try {
                         </div>
                         <h3 class="mission-title">Our Vision</h3>
                         <p class="mission-text">
-                            To become the leading campus event management system in Malawi, setting the standard 
-                            for digital innovation in higher education while building stronger campus communities 
+                            To become the leading campus event management system in Malawi, setting the standard
+                            for digital innovation in higher education while building stronger campus communities
                             through seamless event experiences.
                         </p>
                     </div>
@@ -797,7 +810,7 @@ try {
                 <h2>Why Choose EMS?</h2>
                 <p>Discover the powerful features that make event management effortless</p>
             </div>
-            
+
             <div class="row">
                 <div class="col-lg-3 col-md-6">
                     <div class="feature-card fade-in-up">
@@ -844,19 +857,19 @@ try {
         <div class="container">
             <div class="section-title fade-in-up">
                 <h2>Meet Our Team</h2
-                <p>The passionate individuals behind EMS who make it all possible</p>
+                    <p>The passionate individuals behind EMS who make it all possible</p>
             </div>
-            
+
             <div class="row">
                 <div class="col-lg-4 col-md-6">
                     <div class="team-card fade-in-up">
                         <div class="team-avatar">
-                            JM
+                            IS
                         </div>
-                        <h4 class="team-name">John Mwale</h4>
+                        <h4 class="team-name">Isaac Precept</h4>
                         <p class="team-role">Lead Developer</p>
                         <p class="team-bio">
-                            Passionate full-stack developer with expertise in PHP, JavaScript, and modern web technologies. 
+                            Passionate full-stack developer with expertise in PHP, JavaScript, and modern web technologies.
                             Leading the technical development of EMS with a focus on user experience and performance.
                         </p>
                         <div class="team-social">
@@ -872,16 +885,16 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-lg-4 col-md-6">
                     <div class="team-card fade-in-up">
                         <div class="team-avatar">
-                            SK
+                            SN
                         </div>
-                        <h4 class="team-name">Sarah Kachale</h4>
+                        <h4 class="team-name">Sam Nyirenda</h4>
                         <p class="team-role">UI/UX Designer</p>
                         <p class="team-bio">
-                            Creative designer focused on creating intuitive and beautiful user interfaces. 
+                            Creative designer focused on creating intuitive and beautiful user interfaces.
                             Ensuring EMS provides the best possible user experience for all campus community members.
                         </p>
                         <div class="team-social">
@@ -897,16 +910,16 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-lg-4 col-md-6">
                     <div class="team-card fade-in-up">
                         <div class="team-avatar">
                             PM
                         </div>
-                        <h4 class="team-name">Peter Msiska</h4>
+                        <h4 class="team-name">Kenneth Msosa</h4>
                         <p class="team-role">Project Manager</p>
                         <p class="team-bio">
-                            Experienced project manager coordinating development efforts and ensuring EMS meets 
+                            Experienced project manager coordinating development efforts and ensuring EMS meets
                             the evolving needs of Ekwendeni Mighty Campus community.
                         </p>
                         <div class="team-social">
@@ -952,7 +965,7 @@ try {
                 <div class="col-lg-4 col-md-6 mb-4">
                     <h5 class="mb-3">🎪 EMS</h5>
                     <p class="text-muted">
-                        Ekwendeni Mighty Campus Event Management System - 
+                        Ekwendeni Mighty Campus Event Management System -
                         Connecting our community through amazing events and experiences.
                     </p>
                     <div class="d-flex gap-3">
@@ -1025,7 +1038,7 @@ try {
 
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -1062,4 +1075,5 @@ try {
         console.log('📖 About Page Loaded Successfully!');
     </script>
 </body>
+
 </html>
