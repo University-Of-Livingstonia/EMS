@@ -19,10 +19,6 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
-if (!$currentUser['email_verified'] == 1) {
-    header('Location: verify_email.php');
-    exit;
-}
 // Get filter parameters
 $category = $_GET['category'] ?? '';
 $search = $_GET['search'] ?? '';
@@ -925,7 +921,7 @@ $totalPages = ceil($totalEvents / $limit);
                     <i class="fas fa-bars"></i>
                 </button>
                 <h1 class="page-title">
-                    <i class="fas fa-calendar-alt"></i> Browse Events
+                    <i class="fas fa-user nav-icon"></i> Welcome
                 </h1>
             </div>
 
@@ -940,247 +936,32 @@ $totalPages = ceil($totalEvents / $limit);
             </div>
         </div>
 
-        <!-- 🔍 Search & Filter Section -->
-        <div class="search-filter-section fade-in">
-            <form method="GET" action="events.php" id="filterForm">
-                <!-- Search Bar -->
-                <div class="search-bar">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" name="search" class="search-input"
-                        placeholder="Search events by title, description, or location..."
-                        value="<?php echo htmlspecialchars($search); ?>">
-                </div>
 
-                <!-- Quick Filters -->
-                <div class="quick-filters">
-                    <a href="?date=today" class="quick-filter <?php echo $date_filter === 'today' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar-day"></i> Today
-                    </a>
-                    <a href="?date=tomorrow" class="quick-filter <?php echo $date_filter === 'tomorrow' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar-plus"></i> Tomorrow
-                    </a>
-                    <a href="?date=this_week" class="quick-filter <?php echo $date_filter === 'this_week' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar-week"></i> This Week
-                    </a>
-                    <a href="?date=this_month" class="quick-filter <?php echo $date_filter === 'this_month' ? 'active' : ''; ?>">
-                        <i class="fas fa-calendar"></i> This Month
-                    </a>
-                    <?php if ($search || $category || $date_filter): ?>
-                        <a href="events.php" class="quick-filter">
-                            <i class="fas fa-times"></i> Clear All
-                        </a>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Advanced Filters -->
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label class="filter-label">Category</label>
-                        <select name="category" class="filter-select">
-                            <option value="">All Categories</option>
-                            <?php foreach ($categories as $cat): ?>
-                                <option value="<?php echo htmlspecialchars($cat); ?>"
-                                    <?php echo $category === $cat ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars(ucfirst($cat)); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Date</label>
-                        <select name="date" class="filter-select">
-                            <option value="">Any Time</option>
-                            <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>>Today</option>
-                            <option value="tomorrow" <?php echo $date_filter === 'tomorrow' ? 'selected' : ''; ?>>Tomorrow</option>
-                            <option value="this_week" <?php echo $date_filter === 'this_week' ? 'selected' : ''; ?>>This Week</option>
-                            <option value="this_month" <?php echo $date_filter === 'this_month' ? 'selected' : ''; ?>>This Month</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Sort By</label>
-                        <select name="sort" class="filter-select">
-                            <option value="date_asc" <?php echo $sort === 'date_asc' ? 'selected' : ''; ?>>Date (Earliest First)</option>
-                            <option value="date_desc" <?php echo $sort === 'date_desc' ? 'selected' : ''; ?>>Date (Latest First)</option>
-                            <option value="title_asc" <?php echo $sort === 'title_asc' ? 'selected' : ''; ?>>Title (A-Z)</option>
-                            <option value="title_desc" <?php echo $sort === 'title_desc' ? 'selected' : ''; ?>>Title (Z-A)</option>
-                            <option value="price_asc" <?php echo $sort === 'price_asc' ? 'selected' : ''; ?>>Price (Low to High)</option>
-                            <option value="price_desc" <?php echo $sort === 'price_desc' ? 'selected' : ''; ?>>Price (High to Low)</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <button type="submit" class="filter-btn">
-                            <i class="fas fa-filter"></i> Apply Filters
-                        </button>
-                    </div>
-
-                    <div class="filter-group">
-                        <a href="events.php" class="clear-filters">
-                            <i class="fas fa-times"></i> Clear All
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
 
         <!-- 🎪 Events Section -->
         <div class="events-section">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <?php if ($search): ?>
-                        Search Results for "<?php echo htmlspecialchars($search); ?>"
-                    <?php elseif ($category): ?>
-                        <?php echo htmlspecialchars(ucfirst($category)); ?> Events
-                    <?php else: ?>
-                        Upcoming Events
-                    <?php endif; ?>
-                </h2>
-                <div class="results-info">
-                    Showing <?php echo count($events); ?> of <?php echo $totalEvents; ?> events
-                </div>
-            </div>
 
-            <?php if (!empty($events)): ?>
-                <div class="events-grid">
-                    <?php foreach ($events as $event): ?>
-                        <div class="event-card slide-in">
-                            <div class="event-image">
-                                <?php if ($event['user_registered'] > 0): ?>
-                                    <div class="event-badge badge-registered">Registered</div>
-                                <?php elseif ($event['price'] > 0): ?>
-                                    <div class="event-badge badge-paid">K<?php echo number_format($event['price']); ?></div>
-                                <?php else: ?>
-                                    <div class="event-badge badge-free">Free</div>
-                                <?php endif; ?>
-                            </div>
 
-                            <div class="event-content">
-                                <h3 class="event-title"><?php echo htmlspecialchars($event['title']); ?></h3>
-                                <p class="event-description"><?php echo htmlspecialchars($event['description']); ?></p>
 
-                                <div class="event-meta">
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span><?php echo date('M j, Y', strtotime($event['start_datetime'])); ?></span>
-                                    </div>
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span><?php echo date('g:i A', strtotime($event['start_datetime'])); ?></span>
-                                    </div>
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span><?php echo htmlspecialchars($event['location']); ?></span>
-                                    </div>
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-users"></i>
-                                        <span><?php echo $event['registered_count']; ?>/<?php echo $event['max_attendees']; ?> registered</span>
-                                    </div>
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-user"></i>
-                                        <span><?php echo htmlspecialchars($event['organizer_first'] . ' ' . $event['organizer_last']); ?></span>
-                                    </div>
-                                    <div class="event-meta-item">
-                                        <i class="fas fa-tag"></i>
-                                        <span><?php echo htmlspecialchars(ucfirst($event['category'] ?? 'General')); ?></span>
-                                    </div>
-                                </div>
 
-                                <div class="event-footer">
-                                    <div class="event-price <?php echo $event['price'] == 0 ? 'price-free' : ''; ?>">
-                                        <?php echo $event['price'] > 0 ? 'K' . number_format($event['price']) : 'FREE'; ?>
-                                    </div>
-
-                                    <div class="event-actions">
-                                        <a href="../events/view.php?id=<?php echo $event['event_id']; ?>" class="btn btn-outline">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
-
-                                        <?php if ($event['user_registered'] > 0): ?>
-                                            <span class="btn btn-registered">
-                                                <i class="fas fa-check"></i> Registered
-                                            </span>
-                                        <?php elseif ($event['registered_count'] >= $event['max_attendees']): ?>
-                                            <span class="btn btn-outline" style="opacity: 0.5; cursor: not-allowed;">
-                                                <i class="fas fa-times"></i> Full
-                                            </span>
-                                        <?php else: ?>
-                                            <a href="../events/register.php?id=<?php echo $event['event_id']; ?>" class="btn btn-primary">
-                                                <i class="fas fa-ticket-alt"></i> Register
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <!-- 📄 Pagination -->
-                <?php if ($totalPages > 1): ?>
-                    <div class="pagination-section">
-                        <div class="pagination">
-                            <?php if ($page > 1): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="page-btn">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            <?php endif; ?>
-
-                            <?php
-                            $startPage = max(1, $page - 2);
-                            $endPage = min($totalPages, $page + 2);
-
-                            if ($startPage > 1): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => 1])); ?>" class="page-btn">1</a>
-                                <?php if ($startPage > 2): ?>
-                                    <span class="page-btn" style="border: none; cursor: default;">...</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-
-                            <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>"
-                                    class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
-                                    <?php echo $i; ?>
-                                </a>
-                            <?php endfor; ?>
-
-                            <?php if ($endPage < $totalPages): ?>
-                                <?php if ($endPage < $totalPages - 1): ?>
-                                    <span class="page-btn" style="border: none; cursor: default;">...</span>
-                                <?php endif; ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $totalPages])); ?>" class="page-btn"><?php echo $totalPages; ?></a>
-                            <?php endif; ?>
-
-                            <?php if ($page < $totalPages): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="page-btn">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-            <?php else: ?>
-                <!-- 🎯 Empty State -->
-                <div class="empty-state">
-                    <i class="fas fa-calendar-times"></i>
-                    <h3>No Events Found</h3>
-                    <?php if ($search || $category || $date_filter): ?>
-                        <p>No events match your current filters. Try adjusting your search criteria or browse all events.</p>
-                        <a href="events.php" class="btn btn-primary">
-                            <i class="fas fa-calendar-alt"></i> View All Events
+            <!-- 🎯 Empty State -->
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h3>Verify your email</h3>
+                <?php if ($search || $category || $date_filter): ?>
+                    <p>No events match your current filters. Try adjusting your search criteria or browse all events.</p>
+                    <a href="events.php" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt"></i> View All Events
+                    </a>
+                <?php else: ?>
+                    <p>There are no upcoming events at the moment. Check back later for exciting new events!</p>
+                    <?php if ($currentUser['role'] === 'organizer'): ?>
+                        <a href="../organizer/create-event.php" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Create Your First Event
                         </a>
-                    <?php else: ?>
-                        <p>There are no upcoming events at the moment. Check back later for exciting new events!</p>
-                        <?php if ($currentUser['role'] === 'organizer'): ?>
-                            <a href="../organizer/create-event.php" class="btn btn-primary">
-                                <i class="fas fa-plus-circle"></i> Create Your First Event
-                            </a>
-                        <?php endif; ?>
                     <?php endif; ?>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 👤 User Profile - EMS Dashboard
  * Manage Your Personal Information! 
@@ -18,6 +19,10 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
 // Handle form submissions
 $message = '';
 $messageType = '';
@@ -30,15 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email']);
         $phone = trim($_POST['phone']);
         $bio = trim($_POST['bio']);
-        
+
         // Validate inputs
         $errors = [];
-        
+
         if (empty($firstName)) $errors[] = "First name is required";
         if (empty($lastName)) $errors[] = "Last name is required";
         if (empty($email)) $errors[] = "Email is required";
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "Invalid email format";
-        
+
         // Check if email is already taken by another user
         $stmt = $conn->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
         $stmt->bind_param("si", $email, $userId);
@@ -46,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->get_result()->num_rows > 0) {
             $errors[] = "Email is already taken by another user";
         }
-        
+
         if (empty($errors)) {
             try {
                 $stmt = $conn->prepare("
@@ -55,11 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE user_id = ?
                 ");
                 $stmt->bind_param("sssssi", $firstName, $lastName, $email, $phone, $bio, $userId);
-                
+
                 if ($stmt->execute()) {
                     $message = "Profile updated successfully!";
                     $messageType = "success";
-                    
+
                     // Refresh user data
                     $currentUser = $sessionManager->getCurrentUser();
                 } else {
@@ -76,20 +81,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = "error";
         }
     }
-    
+
     if (isset($_POST['change_password'])) {
         // Change password
         $currentPassword = $_POST['current_password'];
         $newPassword = $_POST['new_password'];
         $confirmPassword = $_POST['confirm_password'];
-        
+
         $errors = [];
-        
+
         if (empty($currentPassword)) $errors[] = "Current password is required";
         if (empty($newPassword)) $errors[] = "New password is required";
         if (strlen($newPassword) < 6) $errors[] = "New password must be at least 6 characters";
         if ($newPassword !== $confirmPassword) $errors[] = "New passwords do not match";
-        
+
         if (empty($errors)) {
             // Verify current password
             if (password_verify($currentPassword, $currentUser['password'])) {
@@ -97,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
                     $stmt = $conn->prepare("UPDATE users SET password = ?, updated_at = NOW() WHERE user_id = ?");
                     $stmt->bind_param("si", $hashedPassword, $userId);
-                    
+
                     if ($stmt->execute()) {
                         $message = "Password changed successfully!";
                         $messageType = "success";
@@ -129,7 +134,7 @@ try {
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $userStats['events_registered'] = $stmt->get_result()->fetch_assoc()['count'];
-    
+
     // Events attended
     $stmt = $conn->prepare("
         SELECT COUNT(*) as count 
@@ -140,17 +145,16 @@ try {
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $userStats['events_attended'] = $stmt->get_result()->fetch_assoc()['count'];
-    
+
     // Total spent
     $stmt = $conn->prepare("SELECT SUM(amount_paid) as total FROM tickets WHERE user_id = ? AND payment_status = 'completed'");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_assoc();
     $userStats['total_spent'] = $result['total'] ?? 0;
-    
+
     // Member since
     $userStats['member_since'] = date('M Y', strtotime($currentUser['created_at']));
-    
 } catch (Exception $e) {
     error_log("User stats error: " . $e->getMessage());
     $userStats = [
@@ -164,16 +168,17 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - EMS</title>
-    
+
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -188,19 +193,19 @@ try {
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--content-bg);
             overflow-x: hidden;
         }
-        
+
         /* 🎨 Sidebar Styles (Same as other pages) */
         .sidebar {
             position: fixed;
@@ -214,13 +219,13 @@ try {
             z-index: 1000;
             overflow-y: auto;
         }
-        
+
         .sidebar-header {
             padding: 2rem 1.5rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
-        
+
         .sidebar-header h3 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -230,15 +235,15 @@ try {
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .sidebar-nav {
             padding: 1rem 0;
         }
-        
+
         .nav-item {
             margin: 0.5rem 0;
         }
-        
+
         .nav-link {
             display: flex;
             align-items: center;
@@ -248,14 +253,14 @@ try {
             transition: all 0.3s ease;
             position: relative;
         }
-        
+
         .nav-link:hover,
         .nav-link.active {
             background: var(--sidebar-hover);
             color: white;
             transform: translateX(5px);
         }
-        
+
         .nav-link::before {
             content: '';
             position: absolute;
@@ -267,30 +272,30 @@ try {
             transform: scaleY(0);
             transition: transform 0.3s ease;
         }
-        
+
         .nav-link:hover::before,
         .nav-link.active::before {
             transform: scaleY(1);
         }
-        
+
         .nav-icon {
             font-size: 1.2rem;
             margin-right: 1rem;
             width: 20px;
             text-align: center;
         }
-        
+
         .nav-text {
             font-weight: 500;
         }
-        
+
         /* 📱 Main Content */
         .main-content {
             margin-left: 280px;
             min-height: 100vh;
             transition: all 0.3s ease;
         }
-        
+
         /* 🎯 Top Bar */
         .top-bar {
             background: white;
@@ -303,20 +308,20 @@ try {
             top: 0;
             z-index: 100;
         }
-        
+
         .page-title {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--sidebar-bg);
             margin: 0;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        
+
         .user-avatar {
             width: 45px;
             height: 45px;
@@ -329,12 +334,12 @@ try {
             font-weight: 600;
             font-size: 1.1rem;
         }
-        
+
         /* 📊 Profile Content */
         .profile-content {
             padding: 2rem;
         }
-        
+
         /* 🎯 Profile Header */
         .profile-header {
             background: white;
@@ -345,7 +350,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .profile-header::before {
             content: '';
             position: absolute;
@@ -355,13 +360,13 @@ try {
             height: 5px;
             background: var(--primary-gradient);
         }
-        
+
         .profile-header-content {
             display: flex;
             align-items: center;
             gap: 2rem;
         }
-        
+
         .profile-avatar {
             width: 120px;
             height: 120px;
@@ -369,14 +374,14 @@ try {
             background: var(--primary-gradient);
             display: flex;
             align-items: center;
-                      justify-content: center;
+            justify-content: center;
             color: white;
             font-weight: 700;
             font-size: 3rem;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             position: relative;
         }
-        
+
         .profile-avatar::after {
             content: '';
             position: absolute;
@@ -386,14 +391,14 @@ try {
             z-index: -1;
             opacity: 0.3;
         }
-        
+
         .profile-info h2 {
             font-size: 2rem;
             font-weight: 700;
             color: var(--sidebar-bg);
             margin-bottom: 0.5rem;
         }
-        
+
         .profile-info .role-badge {
             display: inline-block;
             padding: 0.4rem 1rem;
@@ -405,14 +410,14 @@ try {
             text-transform: capitalize;
             margin-bottom: 1rem;
         }
-        
+
         .profile-meta {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
         }
-        
+
         .profile-meta-item {
             display: flex;
             align-items: center;
@@ -420,23 +425,23 @@ try {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .profile-meta-item i {
             color: #667eea;
             width: 18px;
         }
-        
+
         /* 📊 Stats Cards */
         .stats-section {
             margin-bottom: 2rem;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
         }
-        
+
         .stat-card {
             background: white;
             border-radius: 15px;
@@ -446,7 +451,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -455,24 +460,35 @@ try {
             right: 0;
             height: 4px;
         }
-        
-        .stat-card.primary::before { background: var(--primary-gradient); }
-        .stat-card.success::before { background: var(--success-gradient); }
-        .stat-card.warning::before { background: var(--warning-gradient); }
-        .stat-card.info::before { background: var(--info-gradient); }
-        
+
+        .stat-card.primary::before {
+            background: var(--primary-gradient);
+        }
+
+        .stat-card.success::before {
+            background: var(--success-gradient);
+        }
+
+        .stat-card.warning::before {
+            background: var(--warning-gradient);
+        }
+
+        .stat-card.info::before {
+            background: var(--info-gradient);
+        }
+
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: var(--card-hover-shadow);
         }
-        
+
         .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-        
+
         .stat-icon {
             width: 60px;
             height: 60px;
@@ -483,19 +499,30 @@ try {
             font-size: 1.5rem;
             color: white;
         }
-        
-        .stat-icon.primary { background: var(--primary-gradient); }
-        .stat-icon.success { background: var(--success-gradient); }
-        .stat-icon.warning { background: var(--warning-gradient); }
-        .stat-icon.info { background: var(--info-gradient); }
-        
+
+        .stat-icon.primary {
+            background: var(--primary-gradient);
+        }
+
+        .stat-icon.success {
+            background: var(--success-gradient);
+        }
+
+        .stat-icon.warning {
+            background: var(--warning-gradient);
+        }
+
+        .stat-icon.info {
+            background: var(--info-gradient);
+        }
+
         .stat-number {
             font-size: 2.5rem;
             font-weight: 800;
             color: var(--sidebar-bg);
             margin-bottom: 0.5rem;
         }
-        
+
         .stat-label {
             color: #6c757d;
             font-weight: 500;
@@ -503,7 +530,7 @@ try {
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         /* 🎪 Content Cards */
         .content-card {
             background: white;
@@ -513,17 +540,17 @@ try {
             overflow: hidden;
             transition: all 0.3s ease;
         }
-        
+
         .content-card:hover {
             box-shadow: var(--card-hover-shadow);
         }
-        
+
         .card-header {
             padding: 1.5rem 2rem;
             border-bottom: 1px solid #e9ecef;
             background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
         }
-        
+
         .card-title {
             font-size: 1.3rem;
             font-weight: 600;
@@ -533,23 +560,23 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .card-body {
             padding: 2rem;
         }
-        
+
         /* 📝 Forms */
         .form-group {
             margin-bottom: 1.5rem;
         }
-        
+
         .form-label {
             font-weight: 600;
             color: var(--sidebar-bg);
             margin-bottom: 0.5rem;
             display: block;
         }
-        
+
         .form-control {
             width: 100%;
             padding: 0.8rem 1rem;
@@ -559,23 +586,23 @@ try {
             transition: all 0.3s ease;
             background: white;
         }
-        
+
         .form-control:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .form-control:disabled {
             background: #f8f9fa;
             color: #6c757d;
         }
-        
+
         textarea.form-control {
             resize: vertical;
             min-height: 100px;
         }
-        
+
         /* 🎯 Buttons */
         .btn {
             padding: 0.8rem 2rem;
@@ -590,54 +617,54 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
-        
+
         .btn-success {
             background: var(--success-gradient);
             color: white;
         }
-        
+
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
         }
-        
+
         .btn-danger {
             background: var(--danger-gradient);
             color: white;
         }
-        
+
         .btn-danger:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
         }
-        
+
         .btn-outline {
             background: transparent;
             color: #667eea;
             border: 2px solid #667eea;
         }
-        
+
         .btn-outline:hover {
             background: #667eea;
             color: white;
         }
-        
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none !important;
         }
-        
+
         /* 🚨 Alerts */
         .alert {
             padding: 1rem 1.5rem;
@@ -648,104 +675,106 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .alert-success {
             background: rgba(76, 175, 80, 0.1);
             color: #4CAF50;
             border-left: 4px solid #4CAF50;
         }
-        
+
         .alert-danger {
             background: rgba(244, 67, 54, 0.1);
             color: #f44336;
             border-left: 4px solid #f44336;
         }
-        
+
         .alert-info {
             background: rgba(33, 150, 243, 0.1);
             color: #2196F3;
             border-left: 4px solid #2196F3;
         }
-        
+
         /* 📱 Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.show {
                 transform: translateX(0);
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
-            
+
             .profile-content {
                 padding: 1rem;
             }
-            
+
             .profile-header-content {
                 flex-direction: column;
                 text-align: center;
                 gap: 1rem;
             }
-            
+
             .profile-avatar {
                 width: 100px;
                 height: 100px;
                 font-size: 2.5rem;
             }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
-            
+
             .stat-card {
                 padding: 1rem;
             }
-            
+
             .stat-number {
                 font-size: 1.8rem;
             }
-            
+
             .profile-meta {
                 grid-template-columns: 1fr;
             }
         }
-        
+
         /* 🎨 Animations */
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
-        
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .slide-in {
             animation: slideIn 0.6s ease-out;
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateX(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
-        
+
         /* 🎯 Password Strength Indicator */
         .password-strength {
             margin-top: 0.5rem;
@@ -754,39 +783,54 @@ try {
             border-radius: 2px;
             overflow: hidden;
         }
-        
+
         .password-strength-bar {
             height: 100%;
             transition: all 0.3s ease;
             border-radius: 2px;
         }
-        
-        .strength-weak { background: #f44336; width: 25%; }
-        .strength-fair { background: #ff9800; width: 50%; }
-        .strength-good { background: #2196F3; width: 75%; }
-        .strength-strong { background: #4CAF50; width: 100%; }
-        
+
+        .strength-weak {
+            background: #f44336;
+            width: 25%;
+        }
+
+        .strength-fair {
+            background: #ff9800;
+            width: 50%;
+        }
+
+        .strength-good {
+            background: #2196F3;
+            width: 75%;
+        }
+
+        .strength-strong {
+            background: #4CAF50;
+            width: 100%;
+        }
+
         .password-requirements {
             margin-top: 0.5rem;
             font-size: 0.8rem;
             color: #6c757d;
         }
-        
+
         .requirement {
             display: flex;
             align-items: center;
             gap: 0.3rem;
             margin-bottom: 0.2rem;
         }
-        
+
         .requirement.met {
             color: #4CAF50;
         }
-        
+
         .requirement.met i {
             color: #4CAF50;
         }
-        
+
         .requirement i {
             color: #e9ecef;
             font-size: 0.7rem;
@@ -903,11 +947,11 @@ try {
                     <div class="profile-avatar">
                         <?php echo strtoupper(substr($currentUser['first_name'], 0, 1) . substr($currentUser['last_name'], 0, 1)); ?>
                     </div>
-                    
+
                     <div class="profile-info">
                         <h2><?php echo htmlspecialchars($currentUser['first_name'] . ' ' . $currentUser['last_name']); ?></h2>
                         <span class="role-badge"><?php echo ucfirst($currentUser['role']); ?></span>
-                        
+
                         <div class="profile-meta">
                             <div class="profile-meta-item">
                                 <i class="fas fa-envelope"></i>
@@ -992,42 +1036,42 @@ try {
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">First Name *</label>
-                                            <input type="text" name="first_name" class="form-control" 
-                                                   value="<?php echo htmlspecialchars($currentUser['first_name']); ?>" required>
+                                            <input type="text" name="first_name" class="form-control"
+                                                value="<?php echo htmlspecialchars($currentUser['first_name']); ?>" required>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">Last Name *</label>
-                                            <input type="text" name="last_name" class="form-control" 
-                                                   value="<?php echo htmlspecialchars($currentUser['last_name']); ?>" required>
+                                            <input type="text" name="last_name" class="form-control"
+                                                value="<?php echo htmlspecialchars($currentUser['last_name']); ?>" required>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="form-group">
                                     <label class="form-label">Email Address *</label>
-                                    <input type="email" name="email" class="form-control" 
-                                           value="<?php echo htmlspecialchars($currentUser['email']); ?>" required>
+                                    <input type="email" name="email" class="form-control"
+                                        value="<?php echo htmlspecialchars($currentUser['email']); ?>" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label class="form-label">Phone Number</label>
-                                    <input type="tel" name="phone" class="form-control" 
-                                           value="<?php echo htmlspecialchars($currentUser['phone'] ?? ''); ?>" 
-                                           placeholder="+265 123 456 789">
+                                    <input type="tel" name="phone" class="form-control"
+                                        value="<?php echo htmlspecialchars($currentUser['phone'] ?? ''); ?>"
+                                        placeholder="+265 123 456 789">
                                 </div>
 
                                 <div class="form-group">
                                     <label class="form-label">Bio</label>
-                                    <textarea name="bio" class="form-control" rows="4" 
-                                              placeholder="Tell us about yourself..."><?php echo htmlspecialchars($currentUser['bio'] ?? ''); ?></textarea>
+                                    <textarea name="bio" class="form-control" rows="4"
+                                        placeholder="Tell us about yourself..."><?php echo htmlspecialchars($currentUser['bio'] ?? ''); ?></textarea>
                                 </div>
 
                                 <div class="form-group">
                                     <label class="form-label">Account Type</label>
-                                    <input type="text" class="form-control" 
-                                           value="<?php echo ucfirst($currentUser['role']); ?>" disabled>
+                                    <input type="text" class="form-control"
+                                        value="<?php echo ucfirst($currentUser['role']); ?>" disabled>
                                     <small class="text-muted">Contact admin to change account type</small>
                                 </div>
 
@@ -1063,8 +1107,8 @@ try {
 
                                 <div class="form-group">
                                     <label class="form-label">New Password *</label>
-                                    <input type="password" name="new_password" class="form-control" 
-                                           id="newPassword" required>
+                                    <input type="password" name="new_password" class="form-control"
+                                        id="newPassword" required>
                                     <div class="password-strength">
                                         <div class="password-strength-bar" id="strengthBar"></div>
                                     </div>
@@ -1090,8 +1134,8 @@ try {
 
                                 <div class="form-group">
                                     <label class="form-label">Confirm New Password *</label>
-                                    <input type="password" name="confirm_password" class="form-control" 
-                                           id="confirmPassword" required>
+                                    <input type="password" name="confirm_password" class="form-control"
+                                        id="confirmPassword" required>
                                     <div class="password-match" id="passwordMatch"></div>
                                 </div>
 
@@ -1115,21 +1159,21 @@ try {
                                 <a href="my-events.php" class="btn btn-primary">
                                     <i class="fas fa-calendar-alt"></i> View My Events
                                 </a>
-                                
+
                                 <a href="notifications.php" class="btn btn-success">
                                     <i class="fas fa-bell"></i> Manage Notifications
                                 </a>
-                                
+
                                 <a href="../tickets/history.php" class="btn btn-info">
                                     <i class="fas fa-history"></i> Ticket History
                                 </a>
-                                
+
                                 <button onclick="exportData()" class="btn btn-outline">
                                     <i class="fas fa-download"></i> Export My Data
                                 </button>
-                                
+
                                 <hr>
-                                
+
                                 <button onclick="deactivateAccount()" class="btn btn-danger">
                                     <i class="fas fa-user-times"></i> Deactivate Account
                                 </button>
@@ -1161,7 +1205,7 @@ try {
                                         <small class="text-muted"><?php echo timeAgo($currentUser['updated_at'] ?? $currentUser['created_at']); ?></small>
                                     </div>
                                 </div>
-                                
+
                                 <div class="activity-item">
                                     <div class="activity-icon">
                                         <i class="fas fa-sign-in-alt"></i>
@@ -1194,7 +1238,7 @@ try {
                 <div class="modal-body" style="padding: 2rem;">
                     <div class="alert alert-danger">
                         <i class="fas fa-warning"></i>
-                                              <strong>Warning!</strong> This action cannot be undone.
+                        <strong>Warning!</strong> This action cannot be undone.
                     </div>
                     <p>Are you sure you want to deactivate your account? This will:</p>
                     <ul>
@@ -1279,25 +1323,25 @@ try {
             constructor() {
                 this.init();
             }
-            
+
             init() {
                 this.bindEvents();
                 this.initPasswordStrength();
                 this.initFormValidation();
                 this.initAnimations();
             }
-            
+
             bindEvents() {
                 // Sidebar toggle for mobile
                 const sidebarToggle = document.getElementById('sidebarToggle');
                 const sidebar = document.getElementById('sidebar');
-                
+
                 if (sidebarToggle) {
                     sidebarToggle.addEventListener('click', () => {
                         sidebar.classList.toggle('show');
                     });
                 }
-                
+
                 // Close sidebar when clicking outside on mobile
                 document.addEventListener('click', (e) => {
                     if (window.innerWidth <= 768) {
@@ -1306,23 +1350,23 @@ try {
                         }
                     }
                 });
-                
+
                 // Deactivate account confirmation
                 const deactivateConfirm = document.getElementById('deactivateConfirm');
                 const confirmDeactivate = document.getElementById('confirmDeactivate');
-                
+
                 if (deactivateConfirm) {
                     deactivateConfirm.addEventListener('input', (e) => {
                         confirmDeactivate.disabled = e.target.value !== 'DEACTIVATE';
                     });
                 }
-                
+
                 if (confirmDeactivate) {
                     confirmDeactivate.addEventListener('click', () => {
                         this.processDeactivation();
                     });
                 }
-                
+
                 // Export data
                 const confirmExport = document.getElementById('confirmExport');
                 if (confirmExport) {
@@ -1330,7 +1374,7 @@ try {
                         this.processDataExport();
                     });
                 }
-                
+
                 // Form submissions with loading states
                 const forms = document.querySelectorAll('form');
                 forms.forEach(form => {
@@ -1340,7 +1384,7 @@ try {
                             const originalText = submitBtn.innerHTML;
                             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
                             submitBtn.disabled = true;
-                            
+
                             // Re-enable after 3 seconds if form doesn't submit
                             setTimeout(() => {
                                 if (submitBtn.disabled) {
@@ -1352,26 +1396,26 @@ try {
                     });
                 });
             }
-            
+
             initPasswordStrength() {
                 const newPasswordInput = document.getElementById('newPassword');
                 const confirmPasswordInput = document.getElementById('confirmPassword');
                 const strengthBar = document.getElementById('strengthBar');
                 const passwordMatch = document.getElementById('passwordMatch');
-                
+
                 if (newPasswordInput) {
                     newPasswordInput.addEventListener('input', (e) => {
                         this.checkPasswordStrength(e.target.value);
                     });
                 }
-                
+
                 if (confirmPasswordInput) {
                     confirmPasswordInput.addEventListener('input', (e) => {
                         this.checkPasswordMatch(newPasswordInput.value, e.target.value);
                     });
                 }
             }
-            
+
             checkPasswordStrength(password) {
                 const requirements = {
                     length: password.length >= 6,
@@ -1379,7 +1423,7 @@ try {
                     lower: /[a-z]/.test(password),
                     number: /\d/.test(password)
                 };
-                
+
                 // Update requirement indicators
                 Object.keys(requirements).forEach(req => {
                     const element = document.getElementById(req + 'Req');
@@ -1393,14 +1437,14 @@ try {
                         }
                     }
                 });
-                
+
                 // Update strength bar
                 const metCount = Object.values(requirements).filter(Boolean).length;
                 const strengthBar = document.getElementById('strengthBar');
-                
+
                 if (strengthBar) {
                     strengthBar.className = 'password-strength-bar';
-                    
+
                     if (metCount === 1) {
                         strengthBar.classList.add('strength-weak');
                     } else if (metCount === 2) {
@@ -1412,10 +1456,10 @@ try {
                     }
                 }
             }
-            
+
             checkPasswordMatch(password, confirmPassword) {
                 const passwordMatch = document.getElementById('passwordMatch');
-                
+
                 if (passwordMatch) {
                     if (confirmPassword === '') {
                         passwordMatch.innerHTML = '';
@@ -1426,7 +1470,7 @@ try {
                     }
                 }
             }
-            
+
             initFormValidation() {
                 // Real-time email validation
                 const emailInput = document.querySelector('input[name="email"]');
@@ -1435,7 +1479,7 @@ try {
                         this.validateEmail(e.target);
                     });
                 }
-                
+
                 // Phone number formatting
                 const phoneInput = document.querySelector('input[name="phone"]');
                 if (phoneInput) {
@@ -1444,11 +1488,11 @@ try {
                     });
                 }
             }
-            
+
             validateEmail(input) {
                 const email = input.value.trim();
                 const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-                
+
                 if (email && !isValid) {
                     input.style.borderColor = '#f44336';
                     this.showFieldError(input, 'Please enter a valid email address');
@@ -1457,14 +1501,14 @@ try {
                     this.hideFieldError(input);
                 }
             }
-            
+
             formatPhoneNumber(input) {
                 let value = input.value.replace(/\D/g, '');
-                
+
                 if (value.startsWith('265')) {
                     value = value.substring(3);
                 }
-                
+
                 if (value.length > 0) {
                     if (value.length <= 3) {
                         value = `+265 ${value}`;
@@ -1474,34 +1518,34 @@ try {
                         value = `+265 ${value.substring(0, 3)} ${value.substring(3, 6)} ${value.substring(6, 9)}`;
                     }
                 }
-                
+
                 input.value = value;
             }
-            
+
             showFieldError(input, message) {
                 this.hideFieldError(input);
-                
+
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'field-error text-danger';
                 errorDiv.innerHTML = `<small><i class="fas fa-exclamation-circle"></i> ${message}</small>`;
-                
+
                 input.parentNode.appendChild(errorDiv);
             }
-            
+
             hideFieldError(input) {
                 const existingError = input.parentNode.querySelector('.field-error');
                 if (existingError) {
                     existingError.remove();
                 }
             }
-            
+
             initAnimations() {
                 // Animate elements on scroll
                 const observerOptions = {
                     threshold: 0.1,
                     rootMargin: '0px 0px -50px 0px'
                 };
-                
+
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
@@ -1510,20 +1554,20 @@ try {
                         }
                     });
                 }, observerOptions);
-                
+
                 // Observe all animatable elements
                 const animatableElements = document.querySelectorAll('.slide-in, .content-card, .stat-card');
                 animatableElements.forEach(el => observer.observe(el));
             }
-            
+
             async processDeactivation() {
                 const button = document.getElementById('confirmDeactivate');
                 const originalText = button.innerHTML;
-                
+
                 try {
                     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deactivating...';
                     button.disabled = true;
-                    
+
                     const response = await fetch('../api/deactivate_account.php', {
                         method: 'POST',
                         headers: {
@@ -1533,9 +1577,9 @@ try {
                             confirm: 'DEACTIVATE'
                         })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         this.showNotification('Account deactivated successfully. Redirecting...', 'success');
                         setTimeout(() => {
@@ -1552,22 +1596,22 @@ try {
                     button.disabled = false;
                 }
             }
-            
+
             async processDataExport() {
                 const button = document.getElementById('confirmExport');
                 const originalText = button.innerHTML;
-                
+
                 try {
                     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Export...';
                     button.disabled = true;
-                    
+
                     const exportOptions = {
                         profile: document.getElementById('exportProfile').checked,
                         events: document.getElementById('exportEvents').checked,
                         tickets: document.getElementById('exportTickets').checked,
                         payments: document.getElementById('exportPayments').checked
                     };
-                    
+
                     const response = await fetch('../api/export_data.php', {
                         method: 'POST',
                         headers: {
@@ -1575,9 +1619,9 @@ try {
                         },
                         body: JSON.stringify(exportOptions)
                     });
-                    
+
                     if (response.ok) {
-                                              const blob = await response.blob();
+                        const blob = await response.blob();
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
@@ -1586,9 +1630,9 @@ try {
                         a.click();
                         window.URL.revokeObjectURL(url);
                         document.body.removeChild(a);
-                        
+
                         this.showNotification('Data exported successfully!', 'success');
-                        
+
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
                         modal.hide();
@@ -1604,7 +1648,7 @@ try {
                     button.disabled = false;
                 }
             }
-            
+
             showNotification(message, type = 'info') {
                 // Create notification element
                 const notification = document.createElement('div');
@@ -1618,10 +1662,10 @@ try {
                         <i class="fas fa-times"></i>
                     </button>
                 `;
-                
+
                 // Add to page
                 document.body.appendChild(notification);
-                
+
                 // Auto remove after 5 seconds
                 setTimeout(() => {
                     if (notification.parentElement) {
@@ -1631,23 +1675,23 @@ try {
                 }, 5000);
             }
         }
-        
+
         // Global functions for button clicks
         window.deactivateAccount = function() {
             const modal = new bootstrap.Modal(document.getElementById('deactivateModal'));
             modal.show();
         };
-        
+
         window.exportData = function() {
             const modal = new bootstrap.Modal(document.getElementById('exportModal'));
             modal.show();
         };
-        
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
             new ProfileController();
         });
-        
+
         // Additional CSS for notifications and enhancements
         const additionalStyles = `
             <style>
@@ -1897,9 +1941,9 @@ try {
                 }
             </style>
         `;
-        
+
         document.head.insertAdjacentHTML('beforeend', additionalStyles);
     </script>
 </body>
-</html>
 
+</html>

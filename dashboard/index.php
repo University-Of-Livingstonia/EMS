@@ -21,34 +21,42 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
 // Helper functions for dashboard
 if (!function_exists('formatCurrency')) {
-    function formatCurrency($amount) {
+    function formatCurrency($amount)
+    {
         return 'K' . number_format($amount, 0);
     }
 }
 
 if (!function_exists('formatDateTime')) {
-    function formatDateTime($datetime, $format = 'Y-m-d H:i:s') {
+    function formatDateTime($datetime, $format = 'Y-m-d H:i:s')
+    {
         return date($format, strtotime($datetime));
     }
 }
 
 if (!function_exists('timeAgo')) {
-    function timeAgo($datetime) {
+    function timeAgo($datetime)
+    {
         $time = time() - strtotime($datetime);
-        
+
         if ($time < 60) return 'just now';
-        if ($time < 3600) return floor($time/60) . ' minutes ago';
-        if ($time < 86400) return floor($time/3600) . ' hours ago';
-        if ($time < 2592000) return floor($time/86400) . ' days ago';
-        if ($time < 31536000) return floor($time/2592000) . ' months ago';
-        return floor($time/31536000) . ' years ago';
+        if ($time < 3600) return floor($time / 60) . ' minutes ago';
+        if ($time < 86400) return floor($time / 3600) . ' hours ago';
+        if ($time < 2592000) return floor($time / 86400) . ' days ago';
+        if ($time < 31536000) return floor($time / 2592000) . ' months ago';
+        return floor($time / 31536000) . ' years ago';
     }
 }
 
 if (!function_exists('getSingleStat')) {
-    function getSingleStat($conn, $query) {
+    function getSingleStat($conn, $query)
+    {
         $result = $conn->query($query);
         if ($result && $row = $result->fetch_assoc()) {
             return $row['count'] ?? 0;

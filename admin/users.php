@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 👥 Admin Users Management - EMS
  * Ekwendeni Mighty Campus Event Management System
@@ -35,57 +36,57 @@ if ($_POST) {
                 case 'update_role':
                     $userId = (int)$_POST['user_id'];
                     $newRole = $_POST['role'];
-                    
+
                     if (!in_array($newRole, ['user', 'organizer', 'admin'])) {
                         throw new Exception('Invalid role specified.');
                     }
-                    
+
                     $stmt = $conn->prepare("UPDATE users SET role = ? WHERE user_id = ?");
                     $stmt->bind_param("si", $newRole, $userId);
                     $stmt->execute();
-                    
+
                     $message = 'User role updated successfully!';
                     $messageType = 'success';
                     break;
-                    
+
                 case 'toggle_status':
                     $userId = (int)$_POST['user_id'];
-                    $newStatus = $_POST['status'] === 'active' ? 'inactive' : 'active';
-                    
+                    $newStatus = $_POST['status'] === '1' ? 'inactive' : 'active';
+
                     $stmt = $conn->prepare("UPDATE users SET status = ? WHERE user_id = ?");
                     $stmt->bind_param("si", $newStatus, $userId);
                     $stmt->execute();
-                    
+
                     $message = 'User status updated successfully!';
                     $messageType = 'success';
                     break;
-                    
+
                 case 'delete_user':
                     $userId = (int)$_POST['user_id'];
-                    
+
                     // Check if user has events or tickets
                     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM events WHERE organizer_id = ?");
                     $stmt->bind_param("i", $userId);
                     $stmt->execute();
                     $eventCount = $stmt->get_result()->fetch_assoc()['count'];
-                    
+
                     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE user_id = ?");
                     $stmt->bind_param("i", $userId);
                     $stmt->execute();
                     $ticketCount = $stmt->get_result()->fetch_assoc()['count'];
-                    
+
                     if ($eventCount > 0 || $ticketCount > 0) {
                         throw new Exception('Cannot delete user with existing events or tickets.');
                     }
-                    
+
                     $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ?");
                     $stmt->bind_param("i", $userId);
                     $stmt->execute();
-                    
+
                     $message = 'User deleted successfully!';
                     $messageType = 'success';
                     break;
-                    
+
                 case 'create_user':
                     $userData = [
                         'username' => trim($_POST['username']),
@@ -97,26 +98,27 @@ if ($_POST) {
                         'department' => trim($_POST['department']),
                         'phone_number' => trim($_POST['phone_number'])
                     ];
-                    
+
                     // Validate required fields
                     if (empty($userData['username']) || empty($userData['email']) || empty($_POST['password'])) {
                         throw new Exception('Username, email, and password are required.');
                     }
-                    
+
                     // Check if username or email already exists
                     $stmt = $conn->prepare("SELECT user_id FROM users WHERE username = ? OR email = ?");
                     $stmt->bind_param("ss", $userData['username'], $userData['email']);
                     $stmt->execute();
-                    
+
                     if ($stmt->get_result()->num_rows > 0) {
                         throw new Exception('Username or email already exists.');
                     }
-                    
+
                     $stmt = $conn->prepare("
                         INSERT INTO users (username, email, password, first_name, last_name, role, department, phone_number, status, created_at) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())
                     ");
-                    $stmt->bind_param("ssssssss", 
+                    $stmt->bind_param(
+                        "ssssssss",
                         $userData['username'],
                         $userData['email'],
                         $userData['password'],
@@ -127,7 +129,7 @@ if ($_POST) {
                         $userData['phone_number']
                     );
                     $stmt->execute();
-                    
+
                     $message = 'User created successfully!';
                     $messageType = 'success';
                     break;
@@ -213,15 +215,14 @@ try {
         ORDER BY u.$sortBy $sortOrder
         LIMIT ? OFFSET ?
     ";
-    
+
     $allParams = array_merge($params, [$limit, $offset]);
     $allParamTypes = $paramTypes . "ii";
-    
+
     $stmt = $conn->prepare($query);
     $stmt->bind_param($allParamTypes, ...$allParams);
     $stmt->execute();
     $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
 } catch (Exception $e) {
     error_log("Users query error: " . $e->getMessage());
 }
@@ -231,16 +232,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users Management - Admin | EMS</title>
-    
+
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --admin-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -254,19 +256,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             --text-secondary: #6c757d;
             --border-color: #e9ecef;
         }
-        
+
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--content-bg);
             margin-left: 300px;
             transition: margin-left 0.3s ease;
         }
-        
+
         .main-content {
             padding: 2rem;
             min-height: 100vh;
         }
-        
+
         .page-header {
             background: white;
             border-radius: 20px;
@@ -276,7 +278,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             position: relative;
             overflow: hidden;
         }
-        
+
         .page-header::before {
             content: '';
             position: absolute;
@@ -286,7 +288,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             height: 5px;
             background: var(--admin-primary);
         }
-        
+
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -294,7 +296,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             flex-wrap: wrap;
             gap: 1rem;
         }
-        
+
         .page-title {
             font-size: 2.5rem;
             font-weight: 800;
@@ -304,7 +306,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             background-clip: text;
             margin: 0;
         }
-        
+
         .filters-section {
             background: white;
             border-radius: 15px;
@@ -312,19 +314,20 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             padding: 1.5rem;
             margin-bottom: 2rem;
         }
-                .filters-row {
+
+        .filters-row {
             display: flex;
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
         }
-        
+
         .filter-group {
             display: flex;
             flex-direction: column;
             gap: 0.3rem;
         }
-        
+
         .filter-label {
             font-size: 0.8rem;
             font-weight: 600;
@@ -332,7 +335,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .filter-select,
         .filter-input {
             padding: 0.5rem;
@@ -341,17 +344,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             font-size: 0.9rem;
             min-width: 150px;
         }
-        
+
         .filter-select:focus,
         .filter-input:focus {
             outline: none;
             border-color: #667eea;
         }
-        
+
         .search-input {
             min-width: 250px;
         }
-        
+
         .filter-btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -361,29 +364,29 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             transition: all 0.3s ease;
             margin-top: 1.2rem;
         }
-        
+
         .btn-primary {
             background: var(--admin-primary);
             color: white;
         }
-        
+
         .btn-secondary {
             background: #6c757d;
             color: white;
         }
-        
+
         .filter-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        
+
         .users-card {
             background: white;
             border-radius: 20px;
             box-shadow: var(--card-shadow);
             overflow: hidden;
         }
-        
+
         .card-header {
             padding: 1.5rem 2rem;
             border-bottom: 1px solid var(--border-color);
@@ -392,7 +395,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .card-title {
             font-size: 1.3rem;
             font-weight: 700;
@@ -402,7 +405,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             align-items: center;
             gap: 0.7rem;
         }
-        
+
         .add-user-btn {
             background: var(--admin-success);
             color: white;
@@ -416,24 +419,24 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .add-user-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
         }
-        
+
         .users-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         .users-table th,
         .users-table td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         .users-table th {
             background: #f8f9fa;
             font-weight: 600;
@@ -445,11 +448,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             top: 0;
             z-index: 10;
         }
-        
+
         .users-table tr:hover {
             background: #f8f9fa;
         }
-        
+
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -463,22 +466,22 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             font-size: 0.9rem;
             margin-right: 0.7rem;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
         }
-        
+
         .user-details h6 {
             margin: 0;
             font-weight: 600;
             color: var(--text-primary);
         }
-        
+
         .user-details small {
             color: var(--text-secondary);
         }
-        
+
         .role-badge {
             padding: 0.3rem 0.8rem;
             border-radius: 15px;
@@ -486,22 +489,22 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .role-admin {
             background: var(--admin-danger);
             color: white;
         }
-        
+
         .role-organizer {
             background: var(--admin-warning);
             color: white;
         }
-        
+
         .role-user {
             background: var(--admin-info);
             color: white;
         }
-        
+
         .status-badge {
             padding: 0.3rem 0.8rem;
             border-radius: 15px;
@@ -509,24 +512,24 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .status-active {
             background: rgba(76, 175, 80, 0.1);
             color: #4CAF50;
             border: 1px solid #4CAF50;
         }
-        
+
         .status-inactive {
             background: rgba(244, 67, 54, 0.1);
             color: #f44336;
             border: 1px solid #f44336;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 0.5rem;
         }
-        
+
         .action-btn {
             padding: 0.3rem 0.6rem;
             border: none;
@@ -535,27 +538,27 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .btn-edit {
             background: var(--admin-info);
             color: white;
         }
-        
+
         .btn-toggle {
             background: var(--admin-warning);
             color: white;
         }
-        
+
         .btn-delete {
             background: var(--admin-danger);
             color: white;
         }
-        
+
         .action-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
         }
-        
+
         .pagination {
             display: flex;
             justify-content: center;
@@ -564,7 +567,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             margin-top: 2rem;
             padding: 1rem;
         }
-        
+
         .pagination-btn {
             padding: 0.5rem 1rem;
             border: 2px solid var(--border-color);
@@ -575,7 +578,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             text-decoration: none;
             color: var(--text-primary);
         }
-        
+
         .pagination-btn:hover,
         .pagination-btn.active {
             background: var(--admin-primary);
@@ -583,19 +586,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             border-color: transparent;
             text-decoration: none;
         }
-        
+
         .pagination-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
-        
+
         .stat-card {
             background: white;
             border-radius: 15px;
@@ -605,7 +608,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             position: relative;
             overflow: hidden;
         }
-        
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -614,19 +617,30 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             right: 0;
             height: 4px;
         }
-        
-        .stat-card.primary::before { background: var(--admin-primary); }
-        .stat-card.success::before { background: var(--admin-success); }
-        .stat-card.warning::before { background: var(--admin-warning); }
-        .stat-card.info::before { background: var(--admin-info); }
-        
+
+        .stat-card.primary::before {
+            background: var(--admin-primary);
+        }
+
+        .stat-card.success::before {
+            background: var(--admin-success);
+        }
+
+        .stat-card.warning::before {
+            background: var(--admin-warning);
+        }
+
+        .stat-card.info::before {
+            background: var(--admin-info);
+        }
+
         .stat-number {
             font-size: 2rem;
             font-weight: 900;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
-        
+
         .stat-label {
             color: var(--text-secondary);
             font-weight: 600;
@@ -634,45 +648,45 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         /* Modal Styles */
         .modal-content {
             border-radius: 20px;
             border: none;
             box-shadow: var(--card-shadow);
         }
-        
+
         .modal-header {
             background: var(--admin-primary);
             color: white;
             border-radius: 20px 20px 0 0;
             border-bottom: none;
         }
-        
+
         .modal-title {
             font-weight: 700;
         }
-        
+
         .btn-close {
             filter: invert(1);
         }
-        
+
         .form-control {
             border: 2px solid var(--border-color);
             border-radius: 10px;
             padding: 0.7rem;
         }
-        
+
         .form-control:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
-        
+
         .form-label {
             font-weight: 600;
             color: var(--text-primary);
         }
-        
+
         /* Alert Styles */
         .alert {
             border-radius: 15px;
@@ -680,333 +694,334 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             padding: 1rem 1.5rem;
             margin-bottom: 2rem;
         }
-        
+
         .alert-success {
             background: rgba(76, 175, 80, 0.1);
             color: #4CAF50;
             border-left: 4px solid #4CAF50;
         }
-        
+
         .alert-danger {
             background: rgba(244, 67, 54, 0.1);
             color: #f44336;
             border-left: 4px solid #f44336;
         }
-        
+
         /* Responsive Design */
         @media (max-width: 768px) {
             body {
                 margin-left: 0;
             }
-            
+
             .main-content {
                 padding: 1rem;
             }
-            
+
             .header-content {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .filters-row {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .filter-group {
                 width: 100%;
             }
-            
+
             .filter-select,
             .filter-input {
                 min-width: auto;
                 width: 100%;
             }
-            
+
             .users-table {
                 font-size: 0.8rem;
             }
-            
+
             .users-table th,
             .users-table td {
                 padding: 0.5rem;
             }
-            
+
             .action-buttons {
                 flex-direction: column;
             }
         }
     </style>
 </head>
+
 <body>
-    <!-- Include Admin Navigation -->
-    <?php include 'includes/navigation.php'; ?>
+    <!-- Include Admin Navigation 
     
+
     <div class="main-content">
         <!-- Page Header -->
-        <div class="page-header">
-            <div class="header-content">
-                <div>
-                    <h1 class="page-title">👥 Users Management</h1>
-                    <p class="text-muted">Manage all system users and their permissions</p>
-                </div>
-                <button class="add-user-btn" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                    <i class="fas fa-plus"></i> Add New User
-                </button>
+    <div class="page-header">
+        <div class="header-content">
+            <div>
+                <h1 class="page-title">👥 Users Management</h1>
+                <p class="text-muted">Manage all system users and their permissions</p>
             </div>
-        </div>
-        
-        <!-- Alert Messages -->
-        <?php if ($message): ?>
-            <div class="alert alert-<?= $messageType ?> alert-dismissible fade show">
-                <?= htmlspecialchars($message) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Statistics Row -->
-        <div class="stats-row">
-            <div class="stat-card primary">
-                <div class="stat-number"><?= number_format($totalUsers) ?></div>
-                <div class="stat-label">Total Users</div>
-            </div>
-            <div class="stat-card success">
-                <div class="stat-number">
-                    <?php
-                    $activeUsers = array_filter($users, fn($u) => $u['status'] === 'active');
-                    echo count($activeUsers);
-                    ?>
-                </div>
-                <div class="stat-label">Active Users</div>
-            </div>
-            <div class="stat-card warning">
-                <div class="stat-number">
-                    <?php
-                    $organizers = array_filter($users, fn($u) => $u['role'] === 'organizer');
-                    echo count($organizers);
-                    ?>
-                </div>
-                <div class="stat-label">Organizers</div>
-            </div>
-            <div class="stat-card info">
-                <div class="stat-number">
-                    <?php
-                    $newUsers = array_filter($users, fn($u) => strtotime($u['created_at']) > strtotime('-30 days'));
-                    echo count($newUsers);
-                    ?>
-                </div>
-                <div class="stat-label">New This Month</div>
-            </div>
-        </div>
-        
-        <!-- Filters Section -->
-        <div class="filters-section">
-            <form method="GET" class="filters-row">
-                <div class="filter-group">
-                    <label class="filter-label">Role</label>
-                    <select name="role" class="filter-select">
-                        <option value="all" <?= $roleFilter === 'all' ? 'selected' : '' ?>>All Roles</option>
-                        <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Admin</option>
-                        <option value="organizer" <?= $roleFilter === 'organizer' ? 'selected' : '' ?>>Organizer</option>
-                                                <option value="user" <?= $roleFilter === 'user' ? 'selected' : '' ?>>User</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label class="filter-label">Status</label>
-                    <select name="status" class="filter-select">
-                        <option value="all" <?= $statusFilter === 'all' ? 'selected' : '' ?>>All Status</option>
-                        <option value="active" <?= $statusFilter === 'active' ? 'selected' : '' ?>>Active</option>
-                        <option value="inactive" <?= $statusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label class="filter-label">Sort By</label>
-                    <select name="sort" class="filter-select">
-                        <option value="created_at" <?= $sortBy === 'created_at' ? 'selected' : '' ?>>Date Created</option>
-                        <option value="username" <?= $sortBy === 'username' ? 'selected' : '' ?>>Username</option>
-                        <option value="email" <?= $sortBy === 'email' ? 'selected' : '' ?>>Email</option>
-                        <option value="role" <?= $sortBy === 'role' ? 'selected' : '' ?>>Role</option>
-                        <option value="status" <?= $sortBy === 'status' ? 'selected' : '' ?>>Status</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label class="filter-label">Order</label>
-                    <select name="order" class="filter-select">
-                        <option value="DESC" <?= $sortOrder === 'DESC' ? 'selected' : '' ?>>Descending</option>
-                        <option value="ASC" <?= $sortOrder === 'ASC' ? 'selected' : '' ?>>Ascending</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label class="filter-label">Search</label>
-                    <input type="text" name="search" class="filter-input search-input" 
-                           placeholder="Search users..." value="<?= htmlspecialchars($searchQuery) ?>">
-                </div>
-                
-                <button type="submit" class="filter-btn btn-primary">
-                    <i class="fas fa-search"></i> Filter
-                </button>
-                
-                <a href="users.php" class="filter-btn btn-secondary">
-                    <i class="fas fa-refresh"></i> Reset
-                </a>
-            </form>
-        </div>
-        
-        <!-- Users Table -->
-        <div class="users-card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fas fa-users"></i>
-                    Users List (<?= number_format($totalUsers) ?> total)
-                </h5>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary btn-sm" onclick="exportUsers('csv')">
-                        <i class="fas fa-download"></i> Export CSV
-                    </button>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportUsers('excel')">
-                        <i class="fas fa-file-excel"></i> Export Excel
-                    </button>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Events</th>
-                            <th>Tickets</th>
-                            <th>Total Spent</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($users)): ?>
-                            <tr>
-                                <td colspan="8" class="text-center py-5">
-                                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                                    <h5>No Users Found</h5>
-                                    <p class="text-muted">No users match your current filters</p>
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($users as $user): ?>
-                                <tr>
-                                    <td>
-                                        <div class="user-info">
-                                            <div class="user-avatar">
-                                                <?= strtoupper(substr($user['first_name'] ?: $user['username'], 0, 1) . 
-                                                    substr($user['last_name'] ?: $user['username'], 0, 1)) ?>
-                                            </div>
-                                            <div class="user-details">
-                                                <h6><?= htmlspecialchars(($user['first_name'] && $user['last_name']) ? 
-                                                    $user['first_name'] . ' ' . $user['last_name'] : $user['username']) ?></h6>
-                                                <small><?= htmlspecialchars($user['email']) ?></small>
-                                                <?php if ($user['department']): ?>
-                                                    <small class="d-block text-info"><?= htmlspecialchars($user['department']) ?></small>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="role-badge role-<?= $user['role'] ?>">
-                                            <?= ucfirst($user['role']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-<?= $user['status'] ?>">
-                                            <?= ucfirst($user['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <strong><?= $user['total_events'] ?></strong>
-                                        <?php if ($user['total_events'] > 0): ?>
-                                            <small class="text-muted d-block">as organizer</small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong><?= $user['total_tickets'] ?></strong>
-                                        <?php if ($user['total_tickets'] > 0): ?>
-                                            <small class="text-muted d-block">purchased</small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong>K<?= number_format($user['total_spent'], 2) ?></strong>
-                                    </td>
-                                    <td>
-                                        <span><?= date('M j, Y', strtotime($user['created_at'])) ?></span>
-                                        <small class="text-muted d-block"><?= timeAgo($user['created_at']) ?></small>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="action-btn btn-edit" 
-                                                    onclick="editUser(<?= $user['user_id'] ?>)"
-                                                    title="Edit User">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            
-                                            <?php if ($user['user_id'] !== $currentUser['user_id']): ?>
-                                                <button class="action-btn btn-toggle" 
-                                                        onclick="toggleUserStatus(<?= $user['user_id'] ?>, '<?= $user['status'] ?>')"
-                                                        title="Toggle Status">
-                                                    <i class="fas fa-<?= $user['status'] === 'active' ? 'pause' : 'play' ?>"></i>
-                                                </button>
-                                                
-                                                <button class="action-btn btn-delete" 
-                                                        onclick="deleteUser(<?= $user['user_id'] ?>, '<?= htmlspecialchars($user['username']) ?>')"
-                                                        title="Delete User">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            <?php if ($totalPages > 1): ?>
-                <div class="pagination">
-                    <?php if ($page > 1): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" 
-                           class="pagination-btn">
-                            <i class="fas fa-chevron-left"></i> Previous
-                        </a>
-                    <?php endif; ?>
-                    
-                    <?php
-                    $startPage = max(1, $page - 2);
-                    $endPage = min($totalPages, $page + 2);
-                    
-                    for ($i = $startPage; $i <= $endPage; $i++):
-                    ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" 
-                           class="pagination-btn <?= $i === $page ? 'active' : '' ?>">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
-                    
-                    <?php if ($page < $totalPages): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" 
-                           class="pagination-btn">
-                            Next <i class="fas fa-chevron-right"></i>
-                        </a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+            <button class="add-user-btn" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="fas fa-plus"></i> Add New User
+            </button>
         </div>
     </div>
-    
+
+    <!-- Alert Messages -->
+    <?php if ($message): ?>
+        <div class="alert alert-<?= $messageType ?> alert-dismissible fade show">
+            <?= htmlspecialchars($message) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Statistics Row -->
+    <div class="stats-row">
+        <div class="stat-card primary">
+            <div class="stat-number"><?= number_format($totalUsers) ?></div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-number">
+                <?php
+                $activeUsers = array_filter($users, fn($u) => $u['email_verified'] === 'active');
+                echo count($activeUsers);
+                ?>
+            </div>
+            <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-number">
+                <?php
+                $organizers = array_filter($users, fn($u) => $u['role'] === 'organizer');
+                echo count($organizers);
+                ?>
+            </div>
+            <div class="stat-label">Organizers</div>
+        </div>
+        <div class="stat-card info">
+            <div class="stat-number">
+                <?php
+                $newUsers = array_filter($users, fn($u) => strtotime($u['created_at']) > strtotime('-30 days'));
+                echo count($newUsers);
+                ?>
+            </div>
+            <div class="stat-label">New This Month</div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <form method="GET" class="filters-row">
+            <div class="filter-group">
+                <label class="filter-label">Role</label>
+                <select name="role" class="filter-select">
+                    <option value="all" <?= $roleFilter === 'all' ? 'selected' : '' ?>>All Roles</option>
+                    <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Admin</option>
+                    <option value="organizer" <?= $roleFilter === 'organizer' ? 'selected' : '' ?>>Organizer</option>
+                    <option value="user" <?= $roleFilter === 'user' ? 'selected' : '' ?>>User</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select name="status" class="filter-select">
+                    <option value="all" <?= $statusFilter === 'all' ? 'selected' : '' ?>>All Status</option>
+                    <option value="active" <?= $statusFilter === 'active' ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive" <?= $statusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Sort By</label>
+                <select name="sort" class="filter-select">
+                    <option value="created_at" <?= $sortBy === 'created_at' ? 'selected' : '' ?>>Date Created</option>
+                    <option value="username" <?= $sortBy === 'username' ? 'selected' : '' ?>>Username</option>
+                    <option value="email" <?= $sortBy === 'email' ? 'selected' : '' ?>>Email</option>
+                    <option value="role" <?= $sortBy === 'role' ? 'selected' : '' ?>>Role</option>
+                    <option value="status" <?= $sortBy === 'email_verified' ? 'selected' : '' ?>>Status</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Order</label>
+                <select name="order" class="filter-select">
+                    <option value="DESC" <?= $sortOrder === 'DESC' ? 'selected' : '' ?>>Descending</option>
+                    <option value="ASC" <?= $sortOrder === 'ASC' ? 'selected' : '' ?>>Ascending</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Search</label>
+                <input type="text" name="search" class="filter-input search-input"
+                    placeholder="Search users..." value="<?= htmlspecialchars($searchQuery) ?>">
+            </div>
+
+            <button type="submit" class="filter-btn btn-primary">
+                <i class="fas fa-search"></i> Filter
+            </button>
+
+            <a href="users.php" class="filter-btn btn-secondary">
+                <i class="fas fa-refresh"></i> Reset
+            </a>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="fas fa-users"></i>
+                Users List (<?= number_format($totalUsers) ?> total)
+            </h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="exportUsers('csv')">
+                    <i class="fas fa-download"></i> Export CSV
+                </button>
+                <button class="btn btn-outline-success btn-sm" onclick="exportUsers('excel')">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Events</th>
+                        <th>Tickets</th>
+                        <th>Total Spent</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($users)): ?>
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h5>No Users Found</h5>
+                                <p class="text-muted">No users match your current filters</p>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($users as $user): ?>
+                            <tr>
+                                <td>
+                                    <div class="user-info">
+                                        <div class="user-avatar">
+                                            <?= strtoupper(substr($user['first_name'] ?: $user['username'], 0, 1) .
+                                                substr($user['last_name'] ?: $user['username'], 0, 1)) ?>
+                                        </div>
+                                        <div class="user-details">
+                                            <h6><?= htmlspecialchars(($user['first_name'] && $user['last_name']) ?
+                                                    $user['first_name'] . ' ' . $user['last_name'] : $user['username']) ?></h6>
+                                            <small><?= htmlspecialchars($user['email']) ?></small>
+                                            <?php if ($user['department']): ?>
+                                                <small class="d-block text-info"><?= htmlspecialchars($user['department']) ?></small>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="role-badge role-<?= $user['role'] ?>">
+                                        <?= ucfirst($user['role']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-<?= $user['email_verified'] ?>">
+                                        <?= ucfirst($user['email_verified']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong><?= $user['total_events'] ?></strong>
+                                    <?php if ($user['total_events'] > 0): ?>
+                                        <small class="text-muted d-block">as organizer</small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <strong><?= $user['total_tickets'] ?></strong>
+                                    <?php if ($user['total_tickets'] > 0): ?>
+                                        <small class="text-muted d-block">purchased</small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <strong>K<?= number_format($user['total_spent'], 2) ?></strong>
+                                </td>
+                                <td>
+                                    <span><?= date('M j, Y', strtotime($user['created_at'])) ?></span>
+                                    <small class="text-muted d-block"><?= timeAgo($user['created_at']) ?></small>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn btn-edit"
+                                            onclick="editUser(<?= $user['user_id'] ?>)"
+                                            title="Edit User">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+
+                                        <?php if ($user['user_id'] !== $currentUser['user_id']): ?>
+                                            <button class="action-btn btn-toggle"
+                                                onclick="toggleUserStatus(<?= $user['user_id'] ?>, '<?= $user['email_verified'] ?>')"
+                                                title="Toggle Status">
+                                                <i class="fas fa-<?= $user['email_verified'] === '1' ? 'pause' : 'play' ?>"></i>
+                                            </button>
+
+                                            <button class="action-btn btn-delete"
+                                                onclick="deleteUser(<?= $user['user_id'] ?>, '<?= htmlspecialchars($user['username']) ?>')"
+                                                title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>"
+                        class="pagination-btn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                <?php endif; ?>
+
+                <?php
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+
+                for ($i = $startPage; $i <= $endPage; $i++):
+                ?>
+                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"
+                        class="pagination-btn <?= $i === $page ? 'active' : '' ?>">
+                        <?= $i ?>
+                    </a>
+                <?php endfor; ?>
+
+                <?php if ($page < $totalPages): ?>
+                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>"
+                        class="pagination-btn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    </div>
+
     <!-- Add User Modal -->
     <div class="modal fade" id="addUserModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -1034,7 +1049,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1049,7 +1064,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1068,7 +1083,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1094,7 +1109,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </div>
         </div>
     </div>
-    
+
     <!-- Edit User Modal -->
     <div class="modal fade" id="editUserModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -1123,9 +1138,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
-                                                       <div class="col-md-6">
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Role</label>
                                     <select name="role" id="editRole" class="form-control">
@@ -1145,7 +1160,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1160,7 +1175,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -1175,7 +1190,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Member Since</label>
                             <input type="text" id="editCreatedAt" class="form-control" readonly>
@@ -1191,19 +1206,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </div>
         </div>
     </div>
-    
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // Users Management JavaScript
-        
+
         // Edit User Function
         function editUser(userId) {
             // Find user data from the table
             const userRow = document.querySelector(`tr:has(button[onclick*="${userId}"])`);
             if (!userRow) return;
-            
+
             // Extract user data (this is a simplified approach)
             // In a real application, you'd make an AJAX call to get full user data
             fetch(`../api/get_user.php?id=${userId}`)
@@ -1219,7 +1234,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     document.getElementById('editDepartment').value = user.department || '';
                     document.getElementById('editPhone').value = user.phone_number || '';
                     document.getElementById('editCreatedAt').value = new Date(user.created_at).toLocaleDateString();
-                    
+
                     // Show modal
                     new bootstrap.Modal(document.getElementById('editUserModal')).show();
                 })
@@ -1228,12 +1243,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     showToast('Error loading user data', 'error');
                 });
         }
-        
+
         // Toggle User Status
         function toggleUserStatus(userId, currentStatus) {
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
             const action = newStatus === 'active' ? 'activate' : 'deactivate';
-            
+
             if (confirm(`Are you sure you want to ${action} this user?`)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
@@ -1246,7 +1261,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 form.submit();
             }
         }
-        
+
         // Delete User
         function deleteUser(userId, username) {
             if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
@@ -1260,14 +1275,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 form.submit();
             }
         }
-        
+
         // Export Users
         function exportUsers(format) {
             const params = new URLSearchParams(window.location.search);
             params.set('export', format);
             window.location.href = `export_users.php?${params.toString()}`;
         }
-        
+
         // Toast Notification System
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
@@ -1281,9 +1296,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            
+
             document.body.appendChild(toast);
-            
+
             // Auto remove after 5 seconds
             setTimeout(() => {
                 if (toast.parentElement) {
@@ -1291,39 +1306,39 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 }
             }, 5000);
         }
-        
+
         // Form Validation
         document.getElementById('addUserForm').addEventListener('submit', function(e) {
             const username = this.username.value.trim();
             const email = this.email.value.trim();
             const password = this.password.value;
-            
+
             if (username.length < 3) {
                 e.preventDefault();
                 showToast('Username must be at least 3 characters long', 'error');
                 return;
             }
-            
+
             if (!email.includes('@')) {
                 e.preventDefault();
                 showToast('Please enter a valid email address', 'error');
                 return;
             }
-            
+
             if (password.length < 6) {
                 e.preventDefault();
                 showToast('Password must be at least 6 characters long', 'error');
                 return;
             }
         });
-        
+
         // Auto-refresh every 5 minutes
         setInterval(function() {
             if (!document.querySelector('.modal.show')) {
                 location.reload();
             }
         }, 300000);
-        
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             // Ctrl/Cmd + N for new user
@@ -1331,7 +1346,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 e.preventDefault();
                 new bootstrap.Modal(document.getElementById('addUserModal')).show();
             }
-            
+
             // Escape to close modals
             if (e.key === 'Escape') {
                 const modals = document.querySelectorAll('.modal.show');
@@ -1340,7 +1355,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 });
             }
         });
-        
+
         // Add toast notification styles
         const toastStyles = `
             <style>
@@ -1419,11 +1434,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 }
             </style>s
         `;
-        
+
         document.head.insertAdjacentHTML('beforeend', toastStyles);
-        
+
         console.log('👥 Users Management Loaded Successfully!');
     </script>
 </body>
-</html>
 
+</html>

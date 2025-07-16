@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ⚙️ User Settings - EMS Dashboard
  * Customize Your Experience! 
@@ -18,6 +19,10 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
 // Handle form submissions
 $message = '';
 $messageType = '';
@@ -31,25 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventReminders = isset($_POST['event_reminders']) ? 1 : 0;
         $marketingEmails = isset($_POST['marketing_emails']) ? 1 : 0;
         $weeklyDigest = isset($_POST['weekly_digest']) ? 1 : 0;
-        
+
         // Privacy settings
         $profileVisibility = $_POST['profile_visibility'] ?? 'public';
         $showAttendedEvents = isset($_POST['show_attended_events']) ? 1 : 0;
         $allowMessages = isset($_POST['allow_messages']) ? 1 : 0;
-        
+
         // Display preferences
         $theme = $_POST['theme'] ?? 'light';
         $language = $_POST['language'] ?? 'en';
         $timezone = $_POST['timezone'] ?? 'Africa/Blantyre';
         $dateFormat = $_POST['date_format'] ?? 'Y-m-d';
-        
+
         try {
             // Check if user preferences exist
             $stmt = $conn->prepare("SELECT user_id FROM user_preferences WHERE user_id = ?");
             $stmt->bind_param("i", $userId);
             $stmt->execute();
             $exists = $stmt->get_result()->num_rows > 0;
-            
+
             if ($exists) {
                 // Update existing preferences
                 $stmt = $conn->prepare("
@@ -61,11 +66,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         updated_at = NOW()
                     WHERE user_id = ?
                 ");
-                $stmt->bind_param("iiiiiisisssssi", 
-                    $emailNotifications, $smsNotifications, $pushNotifications,
-                    $eventReminders, $marketingEmails, $weeklyDigest,
-                    $profileVisibility, $showAttendedEvents, $allowMessages,
-                    $theme, $language, $timezone, $dateFormat, $userId
+                $stmt->bind_param(
+                    "iiiiiisisssssi",
+                    $emailNotifications,
+                    $smsNotifications,
+                    $pushNotifications,
+                    $eventReminders,
+                    $marketingEmails,
+                    $weeklyDigest,
+                    $profileVisibility,
+                    $showAttendedEvents,
+                    $allowMessages,
+                    $theme,
+                    $language,
+                    $timezone,
+                    $dateFormat,
+                    $userId
                 );
             } else {
                 // Insert new preferences
@@ -77,14 +93,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         theme, language, timezone, date_format, created_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                 ");
-                $stmt->bind_param("iiiiiisissssss", 
-                    $userId, $emailNotifications, $smsNotifications, $pushNotifications,
-                    $eventReminders, $marketingEmails, $weeklyDigest,
-                    $profileVisibility, $showAttendedEvents, $allowMessages,
-                    $theme, $language, $timezone, $dateFormat
+                $stmt->bind_param(
+                    "iiiiiisissssss",
+                    $userId,
+                    $emailNotifications,
+                    $smsNotifications,
+                    $pushNotifications,
+                    $eventReminders,
+                    $marketingEmails,
+                    $weeklyDigest,
+                    $profileVisibility,
+                    $showAttendedEvents,
+                    $allowMessages,
+                    $theme,
+                    $language,
+                    $timezone,
+                    $dateFormat
                 );
             }
-            
+
             if ($stmt->execute()) {
                 $message = "Settings updated successfully!";
                 $messageType = "success";
@@ -98,10 +125,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Settings update error: " . $e->getMessage());
         }
     }
-    
+
     if (isset($_POST['clear_data'])) {
         $dataType = $_POST['data_type'];
-        
+
         try {
             switch ($dataType) {
                 case 'notifications':
@@ -110,26 +137,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     $message = "Notifications cleared successfully!";
                     break;
-                    
-                                case 'activity_log':
+
+                case 'activity_log':
                     $stmt = $conn->prepare("DELETE FROM user_activity_log WHERE user_id = ?");
                     $stmt->bind_param("i", $userId);
                     $stmt->execute();
                     $message = "Activity log cleared successfully!";
                     break;
-                    
+
                 case 'search_history':
                     $stmt = $conn->prepare("DELETE FROM user_search_history WHERE user_id = ?");
                     $stmt->bind_param("i", $userId);
                     $stmt->execute();
                     $message = "Search history cleared successfully!";
                     break;
-                    
+
                 default:
                     $message = "Invalid data type selected";
                     $messageType = "error";
             }
-            
+
             if ($messageType !== "error") {
                 $messageType = "success";
             }
@@ -148,7 +175,7 @@ try {
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result->num_rows > 0) {
         $userPreferences = $result->fetch_assoc();
     } else {
@@ -182,25 +209,24 @@ try {
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $storageStats['notifications'] = $stmt->get_result()->fetch_assoc()['count'];
-    
+
     // Count activity logs
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM user_activity_log WHERE user_id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $storageStats['activity_logs'] = $stmt->get_result()->fetch_assoc()['count'];
-    
+
     // Count search history
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM user_search_history WHERE user_id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $storageStats['search_history'] = $stmt->get_result()->fetch_assoc()['count'];
-    
+
     // Count tickets
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tickets WHERE user_id = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $storageStats['tickets'] = $stmt->get_result()->fetch_assoc()['count'];
-    
 } catch (Exception $e) {
     error_log("Storage stats error: " . $e->getMessage());
     $storageStats = [
@@ -214,16 +240,17 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - EMS Dashboard</title>
-    
+
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -545,11 +572,11 @@ try {
             border-radius: 50%;
         }
 
-        input:checked + .toggle-slider {
+        input:checked+.toggle-slider {
             background: var(--primary-gradient);
         }
 
-        input:checked + .toggle-slider:before {
+        input:checked+.toggle-slider:before {
             transform: translateX(26px);
         }
 
@@ -565,7 +592,8 @@ try {
             display: block;
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             width: 100%;
             padding: 0.8rem 1rem;
             border: 2px solid #e9ecef;
@@ -575,14 +603,15 @@ try {
             background: white;
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         /* 🎯 Buttons */
-               .btn {
+        .btn {
             padding: 0.8rem 2rem;
             border-radius: 25px;
             font-weight: 600;
@@ -893,6 +922,7 @@ try {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -908,6 +938,7 @@ try {
                 opacity: 0;
                 transform: translateX(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -938,8 +969,13 @@ try {
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -1071,8 +1107,8 @@ try {
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="email_notifications" 
-                                               <?php echo ($userPreferences['email_notifications'] ?? 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="email_notifications"
+                                            <?php echo ($userPreferences['email_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1080,13 +1116,13 @@ try {
 
                             <div class="setting-item">
                                 <div class="setting-info">
-                                                                     <div class="setting-label">SMS Notifications</div>
+                                    <div class="setting-label">SMS Notifications</div>
                                     <p class="setting-description">Receive important alerts via SMS</p>
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="sms_notifications" 
-                                               <?php echo ($userPreferences['sms_notifications'] ?? 0) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="sms_notifications"
+                                            <?php echo ($userPreferences['sms_notifications'] ?? 0) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1099,8 +1135,8 @@ try {
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="push_notifications" 
-                                               <?php echo ($userPreferences['push_notifications'] ?? 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="push_notifications"
+                                            <?php echo ($userPreferences['push_notifications'] ?? 1) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1120,8 +1156,8 @@ try {
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="event_reminders" 
-                                               <?php echo ($userPreferences['event_reminders'] ?? 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="event_reminders"
+                                            <?php echo ($userPreferences['event_reminders'] ?? 1) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1134,8 +1170,8 @@ try {
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="marketing_emails" 
-                                               <?php echo ($userPreferences['marketing_emails'] ?? 0) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="marketing_emails"
+                                            <?php echo ($userPreferences['marketing_emails'] ?? 0) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1148,8 +1184,8 @@ try {
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="weekly_digest" 
-                                               <?php echo ($userPreferences['weekly_digest'] ?? 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" name="weekly_digest"
+                                            <?php echo ($userPreferences['weekly_digest'] ?? 1) ? 'checked' : ''; ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -1198,7 +1234,7 @@ try {
                             <div class="setting-control">
                                 <label class="toggle-switch">
                                     <input type="checkbox" name="show_attended_events" form="preferencesForm"
-                                           <?php echo ($userPreferences['show_attended_events'] ?? 1) ? 'checked' : ''; ?>>
+                                        <?php echo ($userPreferences['show_attended_events'] ?? 1) ? 'checked' : ''; ?>>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1212,7 +1248,7 @@ try {
                             <div class="setting-control">
                                 <label class="toggle-switch">
                                     <input type="checkbox" name="allow_messages" form="preferencesForm"
-                                           <?php echo ($userPreferences['allow_messages'] ?? 1) ? 'checked' : ''; ?>>
+                                        <?php echo ($userPreferences['allow_messages'] ?? 1) ? 'checked' : ''; ?>>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1238,8 +1274,8 @@ try {
                         </div>
 
                         <div class="theme-preview">
-                            <div class="theme-option theme-light <?php echo ($userPreferences['theme'] ?? 'light') === 'light' ? 'selected' : ''; ?>" 
-                                 onclick="selectTheme('light')">
+                            <div class="theme-option theme-light <?php echo ($userPreferences['theme'] ?? 'light') === 'light' ? 'selected' : ''; ?>"
+                                onclick="selectTheme('light')">
                                 <div class="theme-preview-content">
                                     <div class="theme-header">Light Theme</div>
                                     <div class="theme-body">
@@ -1251,8 +1287,8 @@ try {
                                 <div class="theme-label">Light</div>
                             </div>
 
-                            <div class="theme-option theme-dark <?php echo ($userPreferences['theme'] ?? 'light') === 'dark' ? 'selected' : ''; ?>" 
-                                 onclick="selectTheme('dark')">
+                            <div class="theme-option theme-dark <?php echo ($userPreferences['theme'] ?? 'light') === 'dark' ? 'selected' : ''; ?>"
+                                onclick="selectTheme('dark')">
                                 <div class="theme-preview-content">
                                     <div class="theme-header">Dark Theme</div>
                                     <div class="theme-body">
@@ -1264,8 +1300,8 @@ try {
                                 <div class="theme-label">Dark</div>
                             </div>
 
-                            <div class="theme-option theme-auto <?php echo ($userPreferences['theme'] ?? 'light') === 'auto' ? 'selected' : ''; ?>" 
-                                 onclick="selectTheme('auto')">
+                            <div class="theme-option theme-auto <?php echo ($userPreferences['theme'] ?? 'light') === 'auto' ? 'selected' : ''; ?>"
+                                onclick="selectTheme('auto')">
                                 <div class="theme-preview-content">
                                     <div class="theme-header">Auto Theme</div>
                                     <div class="theme-body">
@@ -1278,8 +1314,8 @@ try {
                             </div>
                         </div>
 
-                        <input type="hidden" name="theme" id="themeInput" form="preferencesForm" 
-                               value="<?php echo htmlspecialchars($userPreferences['theme'] ?? 'light'); ?>">
+                        <input type="hidden" name="theme" id="themeInput" form="preferencesForm"
+                            value="<?php echo htmlspecialchars($userPreferences['theme'] ?? 'light'); ?>">
                     </div>
 
                     <div class="settings-group">
@@ -1400,7 +1436,7 @@ try {
                             <div class="storage-count"><?php echo number_format($storageStats['search_history']); ?></div>
                         </div>
 
-                                                <div class="storage-item">
+                        <div class="storage-item">
                             <div class="storage-info">
                                 <div class="storage-icon tickets">
                                     <i class="fas fa-ticket-alt"></i>
@@ -1424,8 +1460,8 @@ try {
                             <div class="col-md-4 mb-3">
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="data_type" value="notifications">
-                                    <button type="submit" name="clear_data" class="btn btn-outline w-100" 
-                                            onclick="return confirm('Clear all notifications? This cannot be undone.')">
+                                    <button type="submit" name="clear_data" class="btn btn-outline w-100"
+                                        onclick="return confirm('Clear all notifications? This cannot be undone.')">
                                         <i class="fas fa-bell-slash"></i>
                                         <br>Clear Notifications
                                     </button>
@@ -1435,8 +1471,8 @@ try {
                             <div class="col-md-4 mb-3">
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="data_type" value="activity_log">
-                                    <button type="submit" name="clear_data" class="btn btn-outline w-100" 
-                                            onclick="return confirm('Clear activity log? This cannot be undone.')">
+                                    <button type="submit" name="clear_data" class="btn btn-outline w-100"
+                                        onclick="return confirm('Clear activity log? This cannot be undone.')">
                                         <i class="fas fa-history"></i>
                                         <br>Clear Activity
                                     </button>
@@ -1446,8 +1482,8 @@ try {
                             <div class="col-md-4 mb-3">
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="data_type" value="search_history">
-                                    <button type="submit" name="clear_data" class="btn btn-outline w-100" 
-                                            onclick="return confirm('Clear search history? This cannot be undone.')">
+                                    <button type="submit" name="clear_data" class="btn btn-outline w-100"
+                                        onclick="return confirm('Clear search history? This cannot be undone.')">
                                         <i class="fas fa-search-minus"></i>
                                         <br>Clear Searches
                                     </button>
@@ -1515,42 +1551,42 @@ try {
                 </div>
                 <div class="modal-body">
                     <p>Select the data you want to export:</p>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="exportProfile" checked>
                         <label class="form-check-label" for="exportProfile">
                             <i class="fas fa-user"></i> Profile Information
                         </label>
                     </div>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="exportEvents" checked>
                         <label class="form-check-label" for="exportEvents">
                             <i class="fas fa-calendar-alt"></i> Event History
                         </label>
                     </div>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="exportTickets" checked>
                         <label class="form-check-label" for="exportTickets">
                             <i class="fas fa-ticket-alt"></i> Tickets & Registrations
                         </label>
                     </div>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="exportNotifications">
                         <label class="form-check-label" for="exportNotifications">
                             <i class="fas fa-bell"></i> Notifications
                         </label>
                     </div>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="exportActivity">
                         <label class="form-check-label" for="exportActivity">
                             <i class="fas fa-history"></i> Activity Log
                         </label>
                     </div>
-                    
+
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>
                         Your data will be exported in JSON format and downloaded as a ZIP file.
@@ -1580,20 +1616,20 @@ try {
                     <div class="alert alert-warning">
                         <strong>Warning!</strong> Deactivating your account will:
                     </div>
-                    
+
                     <ul class="list-unstyled">
                         <li><i class="fas fa-times text-danger"></i> Hide your profile from other users</li>
                         <li><i class="fas fa-times text-danger"></i> Cancel all upcoming event registrations</li>
                         <li><i class="fas fa-times text-danger"></i> Disable notifications</li>
                         <li><i class="fas fa-check text-success"></i> Preserve your data for reactivation</li>
                     </ul>
-                    
+
                     <p>You can reactivate your account anytime by logging in again.</p>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Enter your password to confirm:</label>
-                        <input type="password" class="form-control" id="deactivatePassword" 
-                               placeholder="Your current password">
+                        <input type="password" class="form-control" id="deactivatePassword"
+                            placeholder="Your current password">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1620,26 +1656,26 @@ try {
                     <div class="alert alert-danger">
                         <strong>DANGER!</strong> This action cannot be undone!
                     </div>
-                    
+
                     <p>Deleting your account will permanently:</p>
-                    
+
                     <ul class="list-unstyled">
                         <li><i class="fas fa-times text-danger"></i> Delete all your personal data</li>
                         <li><i class="fas fa-times text-danger"></i> Cancel all event registrations</li>
                         <li><i class="fas fa-times text-danger"></i> Remove your profile completely</li>
                         <li><i class="fas fa-times text-danger"></i> Delete all notifications and history</li>
                     </ul>
-                    
+
                     <div class="form-group mb-3">
                         <label class="form-label">Type "DELETE" to confirm:</label>
-                        <input type="text" class="form-control" id="deleteConfirmation" 
-                               placeholder="Type DELETE here">
+                        <input type="text" class="form-control" id="deleteConfirmation"
+                            placeholder="Type DELETE here">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Enter your password:</label>
-                        <input type="password" class="form-control" id="deletePassword" 
-                               placeholder="Your current password">
+                        <input type="password" class="form-control" id="deletePassword"
+                            placeholder="Your current password">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1654,31 +1690,31 @@ try {
 
     <!-- 📱 Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // 🎯 Settings Controller
         class SettingsController {
             constructor() {
                 this.init();
             }
-            
+
             init() {
                 this.bindEvents();
                 this.initializeTheme();
                 this.setupFormValidation();
             }
-            
+
             bindEvents() {
                 // Sidebar toggle for mobile
                 const sidebarToggle = document.getElementById('sidebarToggle');
                 const sidebar = document.getElementById('sidebar');
-                
+
                 if (sidebarToggle) {
                     sidebarToggle.addEventListener('click', () => {
                         sidebar.classList.toggle('show');
                     });
                 }
-                
+
                 // Close sidebar when clicking outside on mobile
                 document.addEventListener('click', (e) => {
                     if (window.innerWidth <= 768) {
@@ -1687,7 +1723,7 @@ try {
                         }
                     }
                 });
-                
+
                 // Auto-save preferences on change
                 const form = document.getElementById('preferencesForm');
                 if (form) {
@@ -1698,26 +1734,26 @@ try {
                         });
                     });
                 }
-                
+
                 // Delete confirmation input validation
                 const deleteConfirmation = document.getElementById('deleteConfirmation');
                 const deleteButton = document.getElementById('deleteButton');
-                
+
                 if (deleteConfirmation && deleteButton) {
                     deleteConfirmation.addEventListener('input', (e) => {
                         deleteButton.disabled = e.target.value !== 'DELETE';
                     });
                 }
             }
-            
+
             initializeTheme() {
                 const currentTheme = document.getElementById('themeInput').value;
                 this.applyTheme(currentTheme);
             }
-            
+
             applyTheme(theme) {
                 document.body.className = document.body.className.replace(/theme-\w+/g, '');
-                
+
                 if (theme === 'dark') {
                     document.body.classList.add('theme-dark');
                 } else if (theme === 'auto') {
@@ -1727,7 +1763,7 @@ try {
                     document.body.classList.add('theme-light');
                 }
             }
-            
+
             setupFormValidation() {
                 const forms = document.querySelectorAll('form');
                 forms.forEach(form => {
@@ -1738,11 +1774,11 @@ try {
                     });
                 });
             }
-            
+
             validateForm(form) {
                 let isValid = true;
                 const requiredFields = form.querySelectorAll('[required]');
-                
+
                 requiredFields.forEach(field => {
                     if (!field.value.trim()) {
                         this.showFieldError(field, 'This field is required');
@@ -1751,22 +1787,22 @@ try {
                         this.clearFieldError(field);
                     }
                 });
-                
+
                 return isValid;
             }
-            
+
             showFieldError(field, message) {
                 field.classList.add('is-invalid');
-                
+
                 let errorDiv = field.parentNode.querySelector('.field-error');
                 if (!errorDiv) {
                     errorDiv = document.createElement('div');
-                                       errorDiv.className = 'field-error text-danger mt-1';
+                    errorDiv.className = 'field-error text-danger mt-1';
                     field.parentNode.appendChild(errorDiv);
                 }
                 errorDiv.textContent = message;
             }
-            
+
             clearFieldError(field) {
                 field.classList.remove('is-invalid');
                 const errorDiv = field.parentNode.querySelector('.field-error');
@@ -1774,18 +1810,18 @@ try {
                     errorDiv.remove();
                 }
             }
-            
+
             autoSave() {
                 // Show saving indicator
                 this.showSavingIndicator();
-                
+
                 // Debounce auto-save
                 clearTimeout(this.autoSaveTimeout);
                 this.autoSaveTimeout = setTimeout(() => {
                     this.savePreferences();
                 }, 1000);
             }
-            
+
             showSavingIndicator() {
                 const indicator = document.createElement('div');
                 indicator.className = 'saving-indicator';
@@ -1801,36 +1837,36 @@ try {
                     z-index: 9999;
                     font-size: 0.9rem;
                 `;
-                
+
                 document.body.appendChild(indicator);
-                
+
                 setTimeout(() => {
                     if (indicator.parentNode) {
                         indicator.remove();
                     }
                 }, 2000);
             }
-            
+
             savePreferences() {
                 const form = document.getElementById('preferencesForm');
                 const formData = new FormData(form);
                 formData.append('update_preferences', '1');
-                
+
                 fetch('settings.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.text())
-                .then(data => {
-                    // Handle response silently for auto-save
-                    console.log('Preferences saved');
-                })
-                .catch(error => {
-                    console.error('Auto-save failed:', error);
-                });
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        // Handle response silently for auto-save
+                        console.log('Preferences saved');
+                    })
+                    .catch(error => {
+                        console.error('Auto-save failed:', error);
+                    });
             }
         }
-        
+
         // 🎨 Theme Selection
         function selectTheme(theme) {
             // Update visual selection
@@ -1838,50 +1874,50 @@ try {
                 option.classList.remove('selected');
             });
             document.querySelector(`.theme-${theme}`).classList.add('selected');
-            
+
             // Update hidden input
             document.getElementById('themeInput').value = theme;
-            
+
             // Apply theme immediately
             const controller = new SettingsController();
             controller.applyTheme(theme);
-            
+
             // Auto-save
             controller.autoSave();
         }
-        
+
         // 📊 Export Data
         function exportData() {
             const modal = new bootstrap.Modal(document.getElementById('exportModal'));
             modal.show();
         }
-        
+
         function processExport() {
             const selectedData = [];
-            
+
             // Check which data types are selected
             if (document.getElementById('exportProfile').checked) selectedData.push('profile');
             if (document.getElementById('exportEvents').checked) selectedData.push('events');
             if (document.getElementById('exportTickets').checked) selectedData.push('tickets');
             if (document.getElementById('exportNotifications').checked) selectedData.push('notifications');
             if (document.getElementById('exportActivity').checked) selectedData.push('activity');
-            
+
             if (selectedData.length === 0) {
                 alert('Please select at least one data type to export.');
                 return;
             }
-            
+
             // Show loading
             const button = event.target;
             const originalText = button.innerHTML;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
             button.disabled = true;
-            
+
             // Create export request
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'export-data.php';
-            
+
             selectedData.forEach(dataType => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -1889,11 +1925,11 @@ try {
                 input.value = dataType;
                 form.appendChild(input);
             });
-            
+
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
-            
+
             // Reset button after delay
             setTimeout(() => {
                 button.innerHTML = originalText;
@@ -1901,126 +1937,126 @@ try {
                 bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
             }, 3000);
         }
-        
+
         // 🚨 Account Deactivation
         function deactivateAccount() {
             const modal = new bootstrap.Modal(document.getElementById('deactivateModal'));
             modal.show();
         }
-        
+
         function processDeactivation() {
             const password = document.getElementById('deactivatePassword').value;
-            
+
             if (!password) {
                 alert('Please enter your password to confirm deactivation.');
                 return;
             }
-            
+
             // Show loading
             const button = event.target;
             const originalText = button.innerHTML;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deactivating...';
             button.disabled = true;
-            
+
             // Send deactivation request
             fetch('account-actions.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'deactivate',
-                    password: password
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'deactivate',
+                        password: password
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Account deactivated successfully. You will be redirected to the login page.');
-                    window.location.href = '../auth/login.php';
-                } else {
-                    alert(data.message || 'Failed to deactivate account. Please try again.');
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Account deactivated successfully. You will be redirected to the login page.');
+                        window.location.href = '../auth/login.php';
+                    } else {
+                        alert(data.message || 'Failed to deactivate account. Please try again.');
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Deactivation error:', error);
+                    alert('An error occurred. Please try again.');
                     button.innerHTML = originalText;
                     button.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Deactivation error:', error);
-                alert('An error occurred. Please try again.');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            });
+                });
         }
-        
+
         // 💀 Account Deletion
         function deleteAccount() {
             const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
             modal.show();
         }
-        
+
         function processDeletion() {
             const confirmation = document.getElementById('deleteConfirmation').value;
             const password = document.getElementById('deletePassword').value;
-            
+
             if (confirmation !== 'DELETE') {
                 alert('Please type "DELETE" to confirm account deletion.');
                 return;
             }
-            
+
             if (!password) {
                 alert('Please enter your password to confirm deletion.');
                 return;
             }
-            
+
             // Final confirmation
             if (!confirm('This is your FINAL WARNING! Your account and all data will be permanently deleted. This cannot be undone. Are you absolutely sure?')) {
                 return;
             }
-            
+
             // Show loading
             const button = event.target;
             const originalText = button.innerHTML;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
             button.disabled = true;
-            
+
             // Send deletion request
             fetch('account-actions.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'delete',
-                    password: password,
-                    confirmation: confirmation
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        password: password,
+                        confirmation: confirmation
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Account deleted successfully. Goodbye!');
-                    window.location.href = '../auth/login.php';
-                } else {
-                    alert(data.message || 'Failed to delete account. Please try again.');
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Account deleted successfully. Goodbye!');
+                        window.location.href = '../auth/login.php';
+                    } else {
+                        alert(data.message || 'Failed to delete account. Please try again.');
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Deletion error:', error);
+                    alert('An error occurred. Please try again.');
                     button.innerHTML = originalText;
                     button.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Deletion error:', error);
-                alert('An error occurred. Please try again.');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            });
+                });
         }
-        
+
         // 🎯 Initialize Settings
         document.addEventListener('DOMContentLoaded', () => {
             new SettingsController();
-            
+
             // Add smooth scrolling to anchor links
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+                anchor.addEventListener('click', function(e) {
                     e.preventDefault();
                     const target = document.querySelector(this.getAttribute('href'));
                     if (target) {
@@ -2031,7 +2067,7 @@ try {
                     }
                 });
             });
-            
+
             // Add loading states to all buttons
             document.querySelectorAll('.btn').forEach(button => {
                 if (!button.hasAttribute('data-no-loading')) {
@@ -2040,7 +2076,7 @@ try {
                             const originalText = this.innerHTML;
                             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
                             this.disabled = true;
-                            
+
                             // Re-enable after form submission
                             setTimeout(() => {
                                 this.innerHTML = originalText;
@@ -2050,13 +2086,13 @@ try {
                     });
                 }
             });
-            
+
             // Initialize tooltips
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-            
+
             // Add confirmation to dangerous actions
             document.querySelectorAll('.btn-danger').forEach(button => {
                 if (!button.hasAttribute('data-no-confirm')) {
@@ -2068,7 +2104,7 @@ try {
                 }
             });
         });
-        
+
         // 🎨 Additional CSS for dynamic elements
         const additionalStyles = `
             <style>
@@ -2200,10 +2236,9 @@ try {
                 }
             </style>
         `;
-        
+
         document.head.insertAdjacentHTML('beforeend', additionalStyles);
     </script>
 </body>
+
 </html>
-
-

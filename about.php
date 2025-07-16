@@ -914,7 +914,7 @@ try {
                 <div class="col-lg-4 col-md-6">
                     <div class="team-card fade-in-up">
                         <div class="team-avatar">
-                            PM
+                            KM
                         </div>
                         <h4 class="team-name">Kenneth Msosa</h4>
                         <p class="team-role">Project Manager</p>

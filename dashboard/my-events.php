@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 🎫 My Events - EMS User Dashboard
  * Manage Your Event Registrations! 
@@ -18,6 +19,10 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
 // Get filter parameters
 $status_filter = $_GET['status'] ?? 'all';
 $time_filter = $_GET['time'] ?? 'all';
@@ -80,12 +85,12 @@ try {
         WHERE {$whereClause}
         ORDER BY e.start_datetime DESC
     ";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $myEvents = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
+
     // Calculate stats
     foreach ($myEvents as $event) {
         $eventStats['total']++;
@@ -94,7 +99,6 @@ try {
         if ($event['payment_status'] === 'completed') $eventStats['paid']++;
         if ($event['payment_status'] === 'pending') $eventStats['pending']++;
     }
-    
 } catch (Exception $e) {
     error_log("My events fetch error: " . $e->getMessage());
 }
@@ -102,16 +106,17 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Events - EMS</title>
-    
+
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -126,19 +131,19 @@ try {
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--content-bg);
             overflow-x: hidden;
         }
-        
+
         /* 🎨 Sidebar Styles (Same as events.php) */
         .sidebar {
             position: fixed;
@@ -152,13 +157,13 @@ try {
             z-index: 1000;
             overflow-y: auto;
         }
-        
+
         .sidebar-header {
             padding: 2rem 1.5rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
-        
+
         .sidebar-header h3 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -168,15 +173,15 @@ try {
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .sidebar-nav {
             padding: 1rem 0;
         }
-        
+
         .nav-item {
             margin: 0.5rem 0;
         }
-        
+
         .nav-link {
             display: flex;
             align-items: center;
@@ -186,14 +191,14 @@ try {
             transition: all 0.3s ease;
             position: relative;
         }
-        
+
         .nav-link:hover,
         .nav-link.active {
             background: var(--sidebar-hover);
             color: white;
             transform: translateX(5px);
         }
-        
+
         .nav-link::before {
             content: '';
             position: absolute;
@@ -205,30 +210,30 @@ try {
             transform: scaleY(0);
             transition: transform 0.3s ease;
         }
-        
+
         .nav-link:hover::before,
         .nav-link.active::before {
             transform: scaleY(1);
         }
-        
+
         .nav-icon {
             font-size: 1.2rem;
             margin-right: 1rem;
             width: 20px;
             text-align: center;
         }
-        
+
         .nav-text {
             font-weight: 500;
         }
-        
+
         /* 📱 Main Content */
         .main-content {
             margin-left: 280px;
             min-height: 100vh;
             transition: all 0.3s ease;
         }
-        
+
         /* 🎯 Top Bar */
         .top-bar {
             background: white;
@@ -241,20 +246,20 @@ try {
             top: 0;
             z-index: 100;
         }
-        
+
         .page-title {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--sidebar-bg);
             margin: 0;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        
+
         .user-avatar {
             width: 45px;
             height: 45px;
@@ -267,19 +272,19 @@ try {
             font-weight: 600;
             font-size: 1.1rem;
         }
-        
+
         /* 📊 Stats Cards */
         .stats-section {
             padding: 2rem;
             margin-bottom: 1rem;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
         }
-        
+
         .stat-card {
             background: white;
             border-radius: 15px;
@@ -289,7 +294,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -298,24 +303,35 @@ try {
             right: 0;
             height: 4px;
         }
-        
-        .stat-card.primary::before { background: var(--primary-gradient); }
-        .stat-card.success::before { background: var(--success-gradient); }
-        .stat-card.warning::before { background: var(--warning-gradient); }
-        .stat-card.info::before { background: var(--info-gradient); }
-        
+
+        .stat-card.primary::before {
+            background: var(--primary-gradient);
+        }
+
+        .stat-card.success::before {
+            background: var(--success-gradient);
+        }
+
+        .stat-card.warning::before {
+            background: var(--warning-gradient);
+        }
+
+        .stat-card.info::before {
+            background: var(--info-gradient);
+        }
+
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: var(--card-hover-shadow);
         }
-        
+
         .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-        
+
         .stat-icon {
             width: 50px;
             height: 50px;
@@ -326,19 +342,30 @@ try {
             font-size: 1.3rem;
             color: white;
         }
-        
-        .stat-icon.primary { background: var(--primary-gradient); }
-        .stat-icon.success { background: var(--success-gradient); }
-        .stat-icon.warning { background: var(--warning-gradient); }
-        .stat-icon.info { background: var(--info-gradient); }
-        
+
+        .stat-icon.primary {
+            background: var(--primary-gradient);
+        }
+
+        .stat-icon.success {
+            background: var(--success-gradient);
+        }
+
+        .stat-icon.warning {
+            background: var(--warning-gradient);
+        }
+
+        .stat-icon.info {
+            background: var(--info-gradient);
+        }
+
         .stat-number {
             font-size: 2rem;
             font-weight: 800;
             color: var(--sidebar-bg);
             margin-bottom: 0.3rem;
         }
-        
+
         .stat-label {
             color: #6c757d;
             font-weight: 500;
@@ -346,7 +373,7 @@ try {
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         /* 🔍 Filter Section */
         .filter-section {
             background: white;
@@ -355,26 +382,26 @@ try {
             border-radius: 15px;
             box-shadow: var(--card-shadow);
         }
-        
+
         .filter-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             align-items: end;
         }
-        
+
         .filter-group {
             display: flex;
             flex-direction: column;
         }
-        
+
         .filter-label {
             font-weight: 600;
             color: var(--sidebar-bg);
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
         }
-        
+
         .filter-select {
             padding: 0.7rem 1rem;
             border: 2px solid #e9ecef;
@@ -382,12 +409,12 @@ try {
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-        
+
         .filter-select:focus {
             outline: none;
             border-color: #667eea;
         }
-        
+
         .filter-btn {
             padding: 0.7rem 1.5rem;
             background: var(--primary-gradient);
@@ -398,36 +425,36 @@ try {
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .filter-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
-        
+
         /* 🎫 Events List */
         .events-section {
             padding: 0 2rem 2rem 2rem;
         }
-        
+
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
         }
-        
+
         .section-title {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--sidebar-bg);
         }
-        
+
         .events-list {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
-        
+
         .event-card {
             background: white;
             border-radius: 20px;
@@ -436,12 +463,12 @@ try {
             transition: all 0.3s ease;
             position: relative;
         }
-        
-                .event-card:hover {
+
+        .event-card:hover {
             transform: translateX(10px);
             box-shadow: var(--card-hover-shadow);
         }
-        
+
         .event-card::before {
             content: '';
             position: absolute;
@@ -450,22 +477,30 @@ try {
             bottom: 0;
             width: 5px;
         }
-        
-        .event-card.upcoming::before { background: var(--success-gradient); }
-        .event-card.past::before { background: var(--info-gradient); }
-        .event-card.today::before { background: var(--warning-gradient); }
-        
+
+        .event-card.upcoming::before {
+            background: var(--success-gradient);
+        }
+
+        .event-card.past::before {
+            background: var(--info-gradient);
+        }
+
+        .event-card.today::before {
+            background: var(--warning-gradient);
+        }
+
         .event-content {
             padding: 2rem;
         }
-        
+
         .event-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 1.5rem;
         }
-        
+
         .event-title {
             font-size: 1.3rem;
             font-weight: 700;
@@ -473,20 +508,20 @@ try {
             margin: 0;
             margin-bottom: 0.5rem;
         }
-        
+
         .event-subtitle {
             color: #6c757d;
             font-size: 0.9rem;
             margin: 0;
         }
-        
+
         .event-status-group {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 0.5rem;
         }
-        
+
         .event-status {
             padding: 0.4rem 1rem;
             border-radius: 20px;
@@ -494,22 +529,22 @@ try {
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .status-completed {
             background: var(--success-gradient);
             color: white;
         }
-        
+
         .status-pending {
             background: var(--warning-gradient);
             color: white;
         }
-        
+
         .status-cancelled {
             background: var(--danger-gradient);
             color: white;
         }
-        
+
         .time-status {
             padding: 0.3rem 0.8rem;
             border-radius: 15px;
@@ -517,32 +552,32 @@ try {
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .time-upcoming {
             background: rgba(76, 175, 80, 0.1);
             color: #4CAF50;
             border: 1px solid #4CAF50;
         }
-        
+
         .time-past {
             background: rgba(108, 117, 125, 0.1);
             color: #6c757d;
             border: 1px solid #6c757d;
         }
-        
+
         .time-today {
             background: rgba(255, 152, 0, 0.1);
             color: #ff9800;
             border: 1px solid #ff9800;
         }
-        
+
         .event-meta {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .event-meta-item {
             display: flex;
             align-items: center;
@@ -550,17 +585,17 @@ try {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .event-meta-item i {
             color: #667eea;
             width: 18px;
             text-align: center;
         }
-        
+
         .event-meta-item strong {
             color: var(--sidebar-bg);
         }
-        
+
         .event-actions {
             display: flex;
             gap: 0.7rem;
@@ -568,7 +603,7 @@ try {
             padding-top: 1.5rem;
             border-top: 1px solid #e9ecef;
         }
-        
+
         .btn {
             padding: 0.6rem 1.2rem;
             border-radius: 20px;
@@ -582,77 +617,77 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
-        
+
         .btn-success {
             background: var(--success-gradient);
             color: white;
         }
-        
+
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
         }
-        
+
         .btn-warning {
             background: var(--warning-gradient);
             color: white;
         }
-        
+
         .btn-warning:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
         }
-        
+
         .btn-outline {
             background: transparent;
             color: #667eea;
             border: 2px solid #667eea;
         }
-        
+
         .btn-outline:hover {
             background: #667eea;
             color: white;
         }
-        
+
         .btn-danger {
             background: var(--danger-gradient);
             color: white;
         }
-        
+
         .btn-danger:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
         }
-        
+
         /* 🎯 Empty State */
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
             color: #6c757d;
         }
-        
+
         .empty-state i {
             font-size: 5rem;
             margin-bottom: 1.5rem;
             opacity: 0.5;
         }
-        
+
         .empty-state h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
             color: var(--sidebar-bg);
         }
-        
+
         .empty-state p {
             font-size: 1rem;
             margin-bottom: 2rem;
@@ -660,90 +695,92 @@ try {
             margin-left: auto;
             margin-right: auto;
         }
-        
+
         /* 📱 Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.show {
                 transform: translateX(0);
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
-            
+
             .stats-section {
                 padding: 1rem;
             }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
-            
+
             .filter-section {
                 margin: 0 1rem 1rem 1rem;
                 padding: 1rem;
             }
-            
+
             .filter-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .events-section {
                 padding: 0 1rem 2rem 1rem;
             }
-            
+
             .event-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1rem;
             }
-            
+
             .event-status-group {
                 align-items: flex-start;
                 flex-direction: row;
                 gap: 0.5rem;
             }
-            
+
             .event-meta {
                 grid-template-columns: 1fr;
                 gap: 0.7rem;
             }
-            
+
             .event-actions {
                 justify-content: center;
             }
         }
-        
+
         /* 🎨 Animations */
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
-        
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .slide-in {
             animation: slideIn 0.6s ease-out;
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateX(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -903,7 +940,7 @@ try {
                             <option value="cancelled" <?php echo $status_filter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                         </select>
                     </div>
-                    
+
                     <div class="filter-group">
                         <label class="filter-label">Time Period</label>
                         <select name="time" class="filter-select">
@@ -914,13 +951,13 @@ try {
                             <option value="this_week" <?php echo $time_filter === 'this_week' ? 'selected' : ''; ?>>This Week</option>
                         </select>
                     </div>
-                    
+
                     <div class="filter-group">
                         <button type="submit" class="filter-btn">
                             <i class="fas fa-filter"></i> Apply Filters
                         </button>
                     </div>
-                    
+
                     <div class="filter-group">
                         <a href="my-events.php" class="btn btn-outline">
                             <i class="fas fa-times"></i> Clear
@@ -940,7 +977,7 @@ try {
                         All My Events (<?php echo count($myEvents); ?>)
                     <?php endif; ?>
                 </h2>
-                
+
                 <div class="section-actions">
                     <a href="events.php" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Find More Events
@@ -960,7 +997,7 @@ try {
                                             Organized by <?php echo htmlspecialchars($event['organizer_first'] . ' ' . $event['organizer_last']); ?>
                                         </p>
                                     </div>
-                                    
+
                                     <div class="event-status-group">
                                         <span class="event-status status-<?php echo $event['payment_status']; ?>">
                                             <?php echo ucfirst($event['payment_status']); ?>
@@ -970,7 +1007,7 @@ try {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div class="event-meta">
                                     <div class="event-meta-item">
                                         <i class="fas fa-calendar"></i>
@@ -986,7 +1023,7 @@ try {
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-money-bill-wave"></i>
-                                        <span><strong>Amount Paid:</strong> 
+                                        <span><strong>Amount Paid:</strong>
                                             <?php echo $event['amount_paid'] > 0 ? 'K' . number_format($event['amount_paid']) : 'FREE'; ?>
                                         </span>
                                     </div>
@@ -999,37 +1036,37 @@ try {
                                         <span><strong>Organizer:</strong> <?php echo htmlspecialchars($event['organizer_email']); ?></span>
                                     </div>
                                 </div>
-                                
+
                                 <div class="event-actions">
                                     <a href="../events/view.php?id=<?php echo $event['event_id']; ?>" class="btn btn-primary">
                                         <i class="fas fa-eye"></i> View Event
                                     </a>
-                                    
+
                                     <a href="../tickets/view.php?id=<?php echo $event['ticket_id']; ?>" class="btn btn-success">
                                         <i class="fas fa-ticket-alt"></i> View Ticket
                                     </a>
-                                    
+
                                     <?php if ($event['payment_status'] === 'pending'): ?>
                                         <a href="../payments/complete.php?ticket=<?php echo $event['ticket_id']; ?>" class="btn btn-warning">
                                             <i class="fas fa-credit-card"></i> Complete Payment
                                         </a>
                                     <?php endif; ?>
-                                    
+
                                     <?php if ($event['time_status'] === 'upcoming'): ?>
                                         <a href="mailto:<?php echo htmlspecialchars($event['organizer_email']); ?>" class="btn btn-outline">
                                             <i class="fas fa-envelope"></i> Contact Organizer
                                         </a>
-                                        
+
                                         <button onclick="cancelRegistration(<?php echo $event['ticket_id']; ?>)" class="btn btn-danger">
                                             <i class="fas fa-times"></i> Cancel Registration
                                         </button>
                                     <?php endif; ?>
-                                    
+
                                     <?php if ($event['time_status'] === 'past'): ?>
                                         <button onclick="rateEvent(<?php echo $event['event_id']; ?>)" class="btn btn-outline">
                                             <i class="fas fa-star"></i> Rate Event
                                         </button>
-                                        
+
                                         <a href="../tickets/download.php?id=<?php echo $event['ticket_id']; ?>" class="btn btn-outline">
                                             <i class="fas fa-download"></i> Download Receipt
                                         </a>
@@ -1039,7 +1076,7 @@ try {
                         </div>
                     <?php endforeach; ?>
                 </div>
-                
+
                 <!-- 🎯 Quick Actions -->
                 <div class="row mt-4">
                     <div class="col-12">
@@ -1164,7 +1201,7 @@ try {
                         <i class="fas fa-times"></i> Cancel
                     </button>
                     <button type="button" class="btn btn-primary" id="submitRating">
-                                                <i class="fas fa-check"></i> Submit Rating
+                        <i class="fas fa-check"></i> Submit Rating
                     </button>
                 </div>
             </div>
@@ -1182,25 +1219,25 @@ try {
                 this.selectedRating = 0;
                 this.init();
             }
-            
+
             init() {
                 this.bindEvents();
                 this.initAnimations();
                 this.initFilters();
                 this.initRatingSystem();
             }
-            
+
             bindEvents() {
                 // Sidebar toggle for mobile
                 const sidebarToggle = document.getElementById('sidebarToggle');
                 const sidebar = document.getElementById('sidebar');
-                
+
                 if (sidebarToggle) {
                     sidebarToggle.addEventListener('click', () => {
                         sidebar.classList.toggle('show');
                     });
                 }
-                
+
                 // Close sidebar when clicking outside on mobile
                 document.addEventListener('click', (e) => {
                     if (window.innerWidth <= 768) {
@@ -1209,14 +1246,14 @@ try {
                         }
                     }
                 });
-                
+
                 // Cancel registration modal
                 window.cancelRegistration = (ticketId) => {
                     this.currentTicketId = ticketId;
                     const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
                     modal.show();
                 };
-                
+
                 // Rate event modal
                 window.rateEvent = (eventId) => {
                     this.currentEventId = eventId;
@@ -1225,25 +1262,25 @@ try {
                     const modal = new bootstrap.Modal(document.getElementById('rateModal'));
                     modal.show();
                 };
-                
+
                 // Confirm cancellation
                 document.getElementById('confirmCancel').addEventListener('click', () => {
                     this.processCancellation();
                 });
-                
+
                 // Submit rating
                 document.getElementById('submitRating').addEventListener('click', () => {
                     this.submitRating();
                 });
             }
-            
+
             initAnimations() {
                 // Animate cards on scroll
                 const observerOptions = {
                     threshold: 0.1,
                     rootMargin: '0px 0px -50px 0px'
                 };
-                
+
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
@@ -1252,16 +1289,16 @@ try {
                         }
                     });
                 }, observerOptions);
-                
+
                 // Observe all event cards
                 const eventCards = document.querySelectorAll('.event-card');
                 eventCards.forEach(card => observer.observe(card));
-                
+
                 // Observe stat cards
                 const statCards = document.querySelectorAll('.stat-card');
                 statCards.forEach(card => observer.observe(card));
             }
-            
+
             initFilters() {
                 // Auto-submit form on filter change
                 const filterSelects = document.querySelectorAll('.filter-select');
@@ -1271,27 +1308,27 @@ try {
                     });
                 });
             }
-            
+
             initRatingSystem() {
                 const stars = document.querySelectorAll('.rating-stars i');
-                
+
                 stars.forEach(star => {
                     star.addEventListener('click', () => {
                         this.selectedRating = parseInt(star.dataset.rating);
                         this.updateStarDisplay();
                     });
-                    
+
                     star.addEventListener('mouseenter', () => {
                         const rating = parseInt(star.dataset.rating);
                         this.highlightStars(rating);
                     });
                 });
-                
+
                 document.querySelector('.rating-stars').addEventListener('mouseleave', () => {
                     this.updateStarDisplay();
                 });
             }
-            
+
             highlightStars(rating) {
                 const stars = document.querySelectorAll('.rating-stars i');
                 stars.forEach((star, index) => {
@@ -1304,22 +1341,22 @@ try {
                     }
                 });
             }
-            
+
             updateStarDisplay() {
                 this.highlightStars(this.selectedRating);
             }
-            
+
             async processCancellation() {
                 if (!this.currentTicketId) return;
-                
+
                 const button = document.getElementById('confirmCancel');
                 const originalText = button.innerHTML;
-                
+
                 try {
                     // Show loading state
                     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
                     button.disabled = true;
-                    
+
                     const response = await fetch('../api/cancel_registration.php', {
                         method: 'POST',
                         headers: {
@@ -1329,16 +1366,16 @@ try {
                             ticket_id: this.currentTicketId
                         })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         this.showNotification('Registration cancelled successfully!', 'success');
-                        
+
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
                         modal.hide();
-                        
+
                         // Reload page after short delay
                         setTimeout(() => {
                             window.location.reload();
@@ -1355,22 +1392,22 @@ try {
                     button.disabled = false;
                 }
             }
-            
+
             async submitRating() {
                 if (!this.currentEventId || this.selectedRating === 0) {
                     this.showNotification('Please select a rating', 'error');
                     return;
                 }
-                
+
                 const button = document.getElementById('submitRating');
                 const originalText = button.innerHTML;
                 const comment = document.querySelector('#ratingForm textarea').value;
-                
+
                 try {
                     // Show loading state
                     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
                     button.disabled = true;
-                    
+
                     const response = await fetch('../api/rate_event.php', {
                         method: 'POST',
                         headers: {
@@ -1382,16 +1419,16 @@ try {
                             comment: comment
                         })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         this.showNotification('Thank you for your rating!', 'success');
-                        
+
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('rateModal'));
                         modal.hide();
-                        
+
                         // Reset form
                         this.selectedRating = 0;
                         document.querySelector('#ratingForm textarea').value = '';
@@ -1408,7 +1445,7 @@ try {
                     button.disabled = false;
                 }
             }
-            
+
             showNotification(message, type = 'info') {
                 // Create notification element
                 const notification = document.createElement('div');
@@ -1422,10 +1459,10 @@ try {
                         <i class="fas fa-times"></i>
                     </button>
                 `;
-                
+
                 // Add to page
                 document.body.appendChild(notification);
-                
+
                 // Auto remove after 5 seconds
                 setTimeout(() => {
                     if (notification.parentElement) {
@@ -1435,12 +1472,12 @@ try {
                 }, 5000);
             }
         }
-        
+
         // 🚀 Initialize Controller
         document.addEventListener('DOMContentLoaded', () => {
             new MyEventsController();
         });
-        
+
         // 🎯 Additional Utility Functions
         function downloadTicket(ticketId) {
             const link = document.createElement('a');
@@ -1450,7 +1487,7 @@ try {
             link.click();
             document.body.removeChild(link);
         }
-        
+
         function shareEvent(eventId, eventTitle) {
             if (navigator.share) {
                 navigator.share({
@@ -1466,7 +1503,7 @@ try {
                 });
             }
         }
-        
+
         // 🎨 Add notification styles
         const notificationStyles = `
             <style>
@@ -1679,15 +1716,14 @@ try {
                 }
             </style>
         `;
-        
+
         document.head.insertAdjacentHTML('beforeend', notificationStyles);
     </script>
-    
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
 </body>
+
 </html>
-
-

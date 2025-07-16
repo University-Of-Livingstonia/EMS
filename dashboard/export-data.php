@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 📊 Data Export Handler - EMS
  * Exports user data in various formats
@@ -18,6 +19,10 @@ $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 $userId = $currentUser['user_id'];
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
 // Check if request is POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: settings.php');
@@ -39,7 +44,7 @@ try {
         'export_types' => $exportTypes,
         'format_version' => '1.0'
     ];
-    
+
     foreach ($exportTypes as $type) {
         switch ($type) {
             case 'profile':
@@ -53,11 +58,11 @@ try {
                 $stmt->bind_param("i", $userId);
                 $stmt->execute();
                 $exportData['profile'] = $stmt->get_result()->fetch_assoc();
-                
+
                 // Remove sensitive data
                 unset($exportData['profile']['password']);
                 break;
-                
+
             case 'events':
                 $stmt = $conn->prepare("
                     SELECT e.*, t.ticket_id, t.payment_status, t.amount_paid,
@@ -71,7 +76,7 @@ try {
                 $stmt->execute();
                 $exportData['events'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 break;
-                
+
             case 'tickets':
                 $stmt = $conn->prepare("
                     SELECT t.*, e.title as event_title, e.start_datetime
@@ -84,7 +89,7 @@ try {
                 $stmt->execute();
                 $exportData['tickets'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 break;
-                
+
             case 'notifications':
                 $stmt = $conn->prepare("
                     SELECT notification_id, title, message, type, is_read, created_at
@@ -96,7 +101,7 @@ try {
                 $stmt->execute();
                 $exportData['notifications'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 break;
-                
+
             case 'activity':
                 $stmt = $conn->prepare("
                     SELECT activity_type, description, ip_address, user_agent, created_at
@@ -110,15 +115,15 @@ try {
                 break;
         }
     }
-    
+
     // Create temporary directory for export
     $tempDir = sys_get_temp_dir() . '/ems_export_' . $userId . '_' . time();
     mkdir($tempDir, 0755, true);
-    
+
     // Save JSON file
     $jsonFile = $tempDir . '/user_data.json';
     file_put_contents($jsonFile, json_encode($exportData, JSON_PRETTY_PRINT));
-    
+
     // Create README file
     $readmeContent = "EMS User Data Export\n";
     $readmeContent .= "===================\n\n";
@@ -131,13 +136,13 @@ try {
     $readmeContent .= "Data Format: JSON\n";
     $readmeContent .= "Encoding: UTF-8\n\n";
     $readmeContent .= "For questions about this export, contact support.\n";
-    
+
     file_put_contents($tempDir . '/README.txt', $readmeContent);
-    
+
     // Create ZIP file
     $zipFile = $tempDir . '.zip';
     $zip = new ZipArchive();
-    
+
     if ($zip->open($zipFile, ZipArchive::CREATE) === TRUE) {
         $files = scandir($tempDir);
         foreach ($files as $file) {
@@ -146,35 +151,32 @@ try {
             }
         }
         $zip->close();
-        
+
         // Clean up temp directory
         array_map('unlink', glob($tempDir . '/*'));
         rmdir($tempDir);
-        
+
         // Log the export
         logActivity($conn, $userId, 'data_exported', 'User exported their data: ' . implode(', ', $exportTypes));
-        
+
         // Send file to browser
         $filename = 'EMS_UserData_' . $userId . '_' . date('Y-m-d') . '.zip';
-        
+
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Length: ' . filesize($zipFile));
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: 0');
-        
+
         readfile($zipFile);
-        
+
         // Clean up ZIP file
         unlink($zipFile);
-        
     } else {
         throw new Exception('Failed to create ZIP file');
     }
-    
 } catch (Exception $e) {
     error_log("Data export error: " . $e->getMessage());
     header('Location: settings.php?error=export_failed');
     exit;
 }
-?>
