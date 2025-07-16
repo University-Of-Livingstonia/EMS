@@ -35,6 +35,29 @@ class User {
         return $stmt->execute();
     }
 
+    // ✅ Set verification token for user by email
+    public function setVerificationToken($email, $token) {
+        $stmt = $this->conn->prepare("UPDATE users SET verification_token = ?, email_verified = 0 WHERE email = ?");
+        $stmt->bind_param("ss", $token, $email);
+        return $stmt->execute();
+    }
+
+    // ✅ Verify user by token
+    public function verifyUserByToken($token) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE verification_token = ? AND email_verified = 0");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($user = $result->fetch_assoc()) {
+            $stmt = $this->conn->prepare("UPDATE users SET email_verified = 1, verification_token = NULL WHERE user_id = ?");
+            $stmt->bind_param("i", $user['user_id']);
+            return $stmt->execute();
+        }
+
+        return false;
+    }
+
     // ✅ Get user by email
     public function getByEmail($email) {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
