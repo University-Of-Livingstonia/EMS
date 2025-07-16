@@ -148,7 +148,7 @@ class SessionManager
 
             // Handle "Remember Me"
             if ($rememberMe) {
-                $this->setRememberMeCookie($user['user_id']);
+                //  $this->setRememberMeCookie($user['user_id']);
             }
 
             // Update last login
@@ -166,7 +166,7 @@ class SessionManager
                 'redirect' => $this->getRedirectUrl($user['role'])
             ];
         } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
+            //  error_log("Login error: " . $e->getMessage());
             return ['success' => false, 'message' => 'An error occurred during login.'];
         }
     }
@@ -499,7 +499,7 @@ class SessionManager
             }
         } elseif (isset($_COOKIE['remember_me'])) {
             // Check remember me cookie
-            $this->checkRememberMeCookie();
+            //$this->checkRememberMeCookie();
         }
     }
 
@@ -522,8 +522,7 @@ class SessionManager
     /**
      * 🍪 Set remember me cookie
      */
-    private function setRememberMeCookie($userId)
-    {
+    /*   private function setRememberMeCookie($userId) {
         $token = generateToken();
         $expiry = time() + (30 * 24 * 60 * 60); // 30 days
 
@@ -535,12 +534,11 @@ class SessionManager
         // Set cookie
         setcookie('remember_me', $token, $expiry, '/', '', isset($_SERVER['HTTPS']), true);
     }
-
+    */
     /**
      * 🍪 Check remember me cookie
      */
-    private function checkRememberMeCookie()
-    {
+    /* private function checkRememberMeCookie() {
         if (isset($_COOKIE['remember_me'])) {
             $token = $_COOKIE['remember_me'];
 
@@ -557,7 +555,7 @@ class SessionManager
                 setcookie('remember_me', '', time() - 3600, '/');
             }
         }
-    }
+    }*/
 
     /**
      * ✅ Validate registration data

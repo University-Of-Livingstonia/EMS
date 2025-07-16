@@ -34,10 +34,6 @@ if ($_POST && isset($_POST['login'])) {
         $error = 'Please fill in all fields';
     } else {
         $result = $sessionManager->login($email, $password, $remember);
-        echo '<pre>';
-        print_r($result);
-        echo '</pre>';
-        exit; // <-- MOVE HERE
 
         if ($result['success']) {
             $basePath = dirname(dirname($_SERVER['PHP_SELF']));
@@ -45,11 +41,6 @@ if ($_POST && isset($_POST['login'])) {
             exit;
         } else {
             $error = $result['message'];
-
-            // After $result = $sessionManager->login(...);
-            echo '<pre>';
-            print_r($result);
-            echo '</pre>';
         }
     }
 }
@@ -566,7 +557,7 @@ if (isset($_GET['error']) && $_GET['error'] === 'access_denied') {
             // Form submission with loading state
             loginForm.addEventListener('submit', function(e) {
                 // Show loading state
-                loginBtn.enabled = true;
+                // loginBtn.disabled = true;
                 loginSpinner.classList.add('show');
                 loginBtn.querySelector('span').textContent = 'Signing In...';
 
