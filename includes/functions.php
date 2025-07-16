@@ -1683,61 +1683,6 @@ function getActivityFeed($conn, $userId = null, $limit = 20)
     }
 }
 
-/**
- * 🎯 Export data to CSV
- */
-function exportToCSV($data, $filename, $headers = [])
-{
-    try {
-        // Set headers for download
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-
-        $output = fopen('php://output', 'w');
-
-        // Write headers if provided
-        if (!empty($headers)) {
-            fputcsv($output, $headers);
-        } elseif (!empty($data)) {
-            // Use array keys as headers
-            fputcsv($output, array_keys($data[0]));
-        }
-
-        // Write data
-        foreach ($data as $row) {
-            fputcsv($output, $row);
-        }
-
-        fclose($output);
-        exit;
-    } catch (Exception $e) {
-        error_log("Export to CSV error: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * 🎨 Generate PDF report (placeholder)
- */
-function generatePDFReport($data, $title = 'Report')
-{
-    try {
-        // This is a placeholder for PDF generation
-        // You can integrate with libraries like TCPDF, FPDF, or mPDF
-
-        return [
-            'success' => true,
-            'message' => 'PDF generation functionality needs to be implemented',
-            'data' => $data,
-            'title' => $title
-        ];
-    } catch (Exception $e) {
-        error_log("Generate PDF report error: " . $e->getMessage());
-        return ['success' => false, 'message' => 'Failed to generate PDF'];
-    }
-}
 
 /**
  * 🔍 Validate and sanitize form data
@@ -3702,6 +3647,8 @@ function getSystemInfo()
         'peak_memory' => formatBytes(memory_get_peak_usage(true))
     ];
 }
+
+
 
 // 🎯 End of functions.php - EMS Helper Functions
 // Total functions: 100+ comprehensive helper functions for the EMS system
