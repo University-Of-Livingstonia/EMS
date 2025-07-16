@@ -26,6 +26,10 @@ if ($userId) {
             INSERT INTO activity_logs (user_id, activity_type, description, ip_address, user_agent, created_at)
             VALUES (?, 'logout', 'User logged out', ?, ?, NOW())
         ");
+        if ($stmt === false) {
+            error_log("Logout prepare failed: " . $conn->error);
+            throw new Exception("Database prepare failed: " . $conn->error);
+        }
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
         $stmt->bind_param("iss", $userId, $ipAddress, $userAgent);

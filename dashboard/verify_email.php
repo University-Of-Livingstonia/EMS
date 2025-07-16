@@ -1,133 +1,108 @@
 <?php
 
-/**
- * 🎪 Browse Events - EMS User Dashboard
- * Discover Amazing Campus Events! 
- */
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
-require_once '../includes/functions.php';
+$conn = require_once __DIR__ . '/../config/database.php';
+$userModel = new User($conn);
 
-// Get database connection
-$conn = require_once '../config/database.php';
-
-// Initialize session manager
-require_once '../includes/session.php';
+// Initialize session manager and get current user
+require_once __DIR__ . '/../includes/session.php';
 $sessionManager = new SessionManager($conn);
-
-// Require login
-$sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
-$userId = $currentUser['user_id'];
 
-// Get filter parameters
-$category = $_GET['category'] ?? '';
-$search = $_GET['search'] ?? '';
-$date_filter = $_GET['date'] ?? '';
-$sort = $_GET['sort'] ?? 'date_asc';
-$page = max(1, intval($_GET['page'] ?? 1));
-$limit = 12;
-$offset = ($page - 1) * $limit;
+$message = '';
+$error = '';
 
-// Build WHERE clause
-$whereConditions = ["e.status = 'approved'", "e.start_datetime > NOW()"];
-$params = [];
-$types = '';
+// Define variables to avoid undefined warnings
+$search = $search ?? null;
+$category = $category ?? null;
+$date_filter = $date_filter ?? null;
 
-if ($category) {
-    $whereConditions[] = "e.category = ?";
-    $params[] = $category;
-    $types .= 's';
-}
+// Check if token is provided in URL for verification
+if (isset($_GET['token'])) {
+    $token = $_GET['token'];
 
-if ($search) {
-    $whereConditions[] = "(e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
-    $searchTerm = "%{$search}%";
-    $params[] = $searchTerm;
-    $params[] = $searchTerm;
-    $params[] = $searchTerm;
-    $types .= 'sss';
-}
+    // Verify user by token
+    $verified = $userModel->verifyUserByToken($token);
 
-if ($date_filter) {
-    switch ($date_filter) {
-        case 'today':
-            $whereConditions[] = "DATE(e.start_datetime) = CURDATE()";
-            break;
-        case 'tomorrow':
-            $whereConditions[] = "DATE(e.start_datetime) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
-            break;
-        case 'this_week':
-            $whereConditions[] = "WEEK(e.start_datetime) = WEEK(NOW())";
-            break;
-        case 'this_month':
-            $whereConditions[] = "MONTH(e.start_datetime) = MONTH(NOW())";
-            break;
-    }
-}
-
-$whereClause = implode(' AND ', $whereConditions);
-
-// Build ORDER BY clause
-$orderBy = match ($sort) {
-    'date_asc' => 'e.start_datetime ASC',
-    'date_desc' => 'e.start_datetime DESC',
-    'title_asc' => 'e.title ASC',
-    'title_desc' => 'e.title DESC',
-    'price_asc' => 'e.price ASC',
-    'price_desc' => 'e.price DESC',
-    default => 'e.start_datetime ASC'
-};
-
-// Get events
-$events = [];
-$totalEvents = 0;
-
-try {
-    // Count total events
-    $countSql = "SELECT COUNT(*) as total FROM events e WHERE {$whereClause}";
-    if ($params) {
-        $countStmt = $conn->prepare($countSql);
-        $countStmt->bind_param($types, ...$params);
-        $countStmt->execute();
-        $totalEvents = $countStmt->get_result()->fetch_assoc()['total'];
-    } else {
-        $totalEvents = $conn->query($countSql)->fetch_assoc()['total'];
-    }
-
-    // Get events with pagination
-    $sql = "
-        SELECT e.*, u.first_name as organizer_first, u.last_name as organizer_last,
-               (SELECT COUNT(*) FROM tickets t WHERE t.event_id = e.event_id) as registered_count,
-               (SELECT COUNT(*) FROM tickets t WHERE t.event_id = e.event_id AND t.user_id = ?) as user_registered
-        FROM events e 
-        LEFT JOIN users u ON e.organizer_id = u.user_id
-        WHERE {$whereClause}
-        ORDER BY {$orderBy}
-        LIMIT ? OFFSET ?
-    ";
-
-    $stmt = $conn->prepare($sql);
-    $allParams = [$userId, ...$params, $limit, $offset];
-    $allTypes = 'i' . $types . 'ii';
-    $stmt->bind_param($allTypes, ...$allParams);
+if ($verified) {
+    $message = "Your email has been successfully verified. You can now access all features.";
+    // Redirect to dashboard based on user role after successful verification
+    // Since getUserIdByToken does not exist, fetch user by token directly
+    $stmt = $conn->prepare("SELECT * FROM users WHERE verification_token = ?");
+    $stmt->bind_param("s", $token);
     $stmt->execute();
-    $events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-} catch (Exception $e) {
-    error_log("Events fetch error: " . $e->getMessage());
-}
-
-// Get categories for filter
-$categories = [];
-try {
-    $result = $conn->query("SELECT DISTINCT category FROM events WHERE status = 'approved' AND category IS NOT NULL ORDER BY category");
-    while ($row = $result->fetch_assoc()) {
-        $categories[] = $row['category'];
+    $userResult = $stmt->get_result();
+    $currentUser = $userResult->fetch_assoc();
+if ($currentUser) {
+    if ($currentUser['role'] === 'admin') {
+        header('Location: ../admin/dashboard.php');
+    } elseif ($currentUser['role'] === 'organizer') {
+        header('Location: ../organizer/dashboard.php');
+    } else {
+        header('Location: index.php');
     }
-} catch (Exception $e) {
-    error_log("Categories fetch error: " . $e->getMessage());
+    exit;
+} else {
+    header('Location: index.php');
+    exit;
+}
+} else {
+    $error = "Invalid or expired verification token.";
+}
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
+    // Handle request to send verification email
+
+    $email = trim($_POST['email']);
+
+    // Check if user exists and is not verified
+    $user = $userModel->getByEmail($email);
+
+    if ($user) {
+        if ($user['email_verified']) {
+            $error = "This email is already verified.";
+        } else {
+            // Generate a unique verification token
+            $token = bin2hex(random_bytes(16));
+
+            // Save token to user record
+            $userModel->setVerificationToken($email, $token);
+
+            // Prepare verification email
+            $verificationLink = "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/verify_email.php?token=" . $token;
+
+            $subject = "Email Verification - EMS";
+
+            $body = "
+            <html>
+            <head>
+                <title>Email Verification</title>
+            </head>
+            <body>
+                <p>Dear " . htmlspecialchars($user['first_name']) . ",</p>
+                <p>Thank you for registering. Please click the link below to verify your email address:</p>
+                <p><a href='" . $verificationLink . "'>Verify Email</a></p>
+                <p>If you did not request this, please ignore this email.</p>
+                <p>Best regards,<br>EMS Team</p>
+            </body>
+            </html>
+            ";
+
+            // Send email using mailer.php function sendEmail
+            if (sendEmail($email, $subject, $body)) {
+                $message = "Verification email sent. Please check your inbox.";
+            } else {
+                $error = "Failed to send verification email. Please try again later.";
+            }
+        }
+    } else {
+        $error = "No user found with that email address.";
+    }
 }
 
-$totalPages = ceil($totalEvents / $limit);
+/* $totalPages = ceil($totalEvents / $limit); */
 ?>
 
 <!DOCTYPE html>
@@ -960,6 +935,25 @@ $totalPages = ceil($totalEvents / $limit);
                             <i class="fas fa-plus-circle"></i> Create Your First Event
                         </a>
                     <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- Email verification request form -->
+                <form method="POST" action="verify_email.php" class="mt-4">
+                    <label for="email" class="form-label">Enter your email to receive a verification link:</label>
+                    <input type="email" id="email" name="email" class="form-control" required placeholder="you@example.com" />
+                    <button type="submit" class="btn btn-primary mt-3">Send Verification Email</button>
+                </form>
+
+                <?php if ($message): ?>
+                    <div class="alert alert-success mt-3" role="alert">
+                        <?= htmlspecialchars($message) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger mt-3" role="alert">
+                        <?= htmlspecialchars($error) ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

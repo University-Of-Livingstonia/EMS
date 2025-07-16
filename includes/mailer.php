@@ -1,6 +1,11 @@
 <?php
 // Load Composer's autoloader
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoloadPath = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoloadPath)) {
+    error_log("Composer autoload.php not found at $autoloadPath");
+    die("Error: Composer autoload.php not found. Please run 'composer install'.");
+}
+require_once $autoloadPath;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
