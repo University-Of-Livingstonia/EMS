@@ -520,7 +520,7 @@ if (isset($_GET['error']) && $_GET['error'] === 'access_denied') {
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Remember me</label>
                     </div>
-                    <a href="forgot-password.php" class="forgot-password">Forgot Password?</a>
+<a href="../views/public/forgot_password.php" class="forgot-password">Forgot Password?</a>
                 </div>
 
                 <div class="form-group">
