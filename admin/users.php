@@ -25,6 +25,8 @@ if ($currentUser['role'] !== 'admin') {
     exit;
 }
 
+include 'includes/navigation.php';
+
 // Handle user actions
 $message = '';
 $messageType = '';
@@ -267,6 +269,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         .main-content {
             padding: 2rem;
             min-height: 100vh;
+            margin-left: 300px;
         }
 
         .page-header {

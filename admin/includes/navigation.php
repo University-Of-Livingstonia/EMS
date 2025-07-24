@@ -113,6 +113,10 @@ $user_avatar = $_SESSION['profile_image'] ?? null;
                         <i class="fas fa-database"></i>
                         <span>Backup</span>
                     </a>
+                    <a href="payment.php" class="nav-item <?php echo $current_page === 'payment.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-money-check-alt"></i>
+                        <span>Payments</span>
+                    </a>
                 </div>
 
             <?php elseif ($user_role === 'organizer'): ?>

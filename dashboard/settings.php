@@ -1287,32 +1287,6 @@ try {
                                 <div class="theme-label">Light</div>
                             </div>
 
-                            <div class="theme-option theme-dark <?php echo ($userPreferences['theme'] ?? 'light') === 'dark' ? 'selected' : ''; ?>"
-                                onclick="selectTheme('dark')">
-                                <div class="theme-preview-content">
-                                    <div class="theme-header">Dark Theme</div>
-                                    <div class="theme-body">
-                                        <div class="theme-line" style="width: 80%;"></div>
-                                        <div class="theme-line" style="width: 60%;"></div>
-                                        <div class="theme-line" style="width: 90%;"></div>
-                                    </div>
-                                </div>
-                                <div class="theme-label">Dark</div>
-                            </div>
-
-                            <div class="theme-option theme-auto <?php echo ($userPreferences['theme'] ?? 'light') === 'auto' ? 'selected' : ''; ?>"
-                                onclick="selectTheme('auto')">
-                                <div class="theme-preview-content">
-                                    <div class="theme-header">Auto Theme</div>
-                                    <div class="theme-body">
-                                        <div class="theme-line" style="width: 80%;"></div>
-                                        <div class="theme-line" style="width: 60%;"></div>
-                                        <div class="theme-line" style="width: 90%;"></div>
-                                    </div>
-                                </div>
-                                <div class="theme-label">Auto</div>
-                            </div>
-                        </div>
 
                         <input type="hidden" name="theme" id="themeInput" form="preferencesForm"
                             value="<?php echo htmlspecialchars($userPreferences['theme'] ?? 'light'); ?>">
@@ -1500,44 +1474,7 @@ try {
                 </div>
             </div>
 
-            <!-- 🚨 Danger Zone -->
-            <div class="settings-card slide-in">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Account Management
-                    </h3>
-                    <p class="card-subtitle">Manage your account settings</p>
-                </div>
-                <div class="card-body">
-                    <div class="danger-zone">
-                        <div class="danger-zone-title">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Danger Zone
-                        </div>
-                        <p class="danger-zone-description">
-                            These actions are permanent and cannot be undone. Please proceed with caution.
-                        </p>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <button type="button" class="btn btn-danger w-100" onclick="deactivateAccount()">
-                                    <i class="fas fa-user-slash"></i>
-                                    Deactivate Account
-                                </button>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <button type="button" class="btn btn-danger w-100" onclick="deleteAccount()">
-                                    <i class="fas fa-trash-alt"></i>
-                                    Delete Account
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- 🗂️ Export Data Modal -->
     <div class="modal fade" id="exportModal" tabindex="-1">
