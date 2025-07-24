@@ -35,13 +35,12 @@ if ($_POST && isset($_POST['login'])) {
     } else {
         $result = $sessionManager->login($email, $password, $remember);
 
-        if ($result['success']) {
-            $basePath = dirname(dirname($_SERVER['PHP_SELF']));
-            header('Location: ' . $basePath . '/dashboard/index.php');
-            exit;
-        } else {
-            $error = $result['message'];
-        }
+if ($result['success']) {
+    header('Location: ' . $result['redirect']);
+    exit;
+} else {
+    $error = $result['message'];
+}
     }
 }
 

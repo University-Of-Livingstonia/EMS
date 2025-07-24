@@ -18,6 +18,12 @@ $sessionManager = new SessionManager($conn);
 $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 
+// Deny access and redirect if user is not verified
+if (!$currentUser || !isset($currentUser['email_verified']) || $currentUser['email_verified'] != 1) {
+    header('Location: verify_email.php');
+    exit;
+}
+
 // Check if user is organizer or admin
 if (!in_array($currentUser['role'], ['organizer', 'admin'])) {
     header('Location: ../../dashboard/index.php');

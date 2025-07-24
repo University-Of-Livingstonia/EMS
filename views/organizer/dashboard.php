@@ -19,6 +19,11 @@ $sessionManager = new SessionManager($conn);
 $sessionManager->requireLogin();
 $currentUser = $sessionManager->getCurrentUser();
 
+if (!$currentUser['email_verified'] == 1) {
+    header('Location: verify_email.php');
+    exit;
+}
+
 // Check if user is organizer or admin
 if (!in_array($currentUser['role'], ['organizer', 'admin'])) {
     header('Location: ../../dashboard/index.php');
@@ -45,6 +50,10 @@ try {
         WHERE organizer_id = ?
         GROUP BY status
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -57,6 +66,10 @@ try {
     
     // Total events count
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM events WHERE organizer_id = ?");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $organizerStats['total_events'] = $stmt->get_result()->fetch_assoc()['total'];
@@ -72,6 +85,10 @@ try {
         JOIN events e ON t.event_id = e.event_id
         WHERE e.organizer_id = ?
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $organizerStats['tickets'] = $stmt->get_result()->fetch_assoc();
@@ -84,6 +101,10 @@ try {
         AND start_datetime > NOW() 
         AND status = 'approved'
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $organizerStats['upcoming_events'] = $stmt->get_result()->fetch_assoc()['count'];
@@ -95,6 +116,10 @@ try {
         JOIN events e ON c.event_id = e.event_id
         WHERE e.organizer_id = ? AND c.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $organizerStats['recent_communications'] = $stmt->get_result()->fetch_assoc()['count'];
@@ -134,6 +159,10 @@ try {
         ORDER BY e.created_at DESC
         LIMIT 10
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $myEvents = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -156,6 +185,10 @@ try {
         ORDER BY t.created_at DESC
         LIMIT 15
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $recentAttendees = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -179,6 +212,10 @@ try {
         ORDER BY registrations DESC
         LIMIT 1
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -199,6 +236,10 @@ try {
             GROUP BY e.event_id
         ) as event_stats
     ");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $conn->error);
+        throw new Exception("Database query prepare failed");
+    }
     $stmt->bind_param("i", $organizerId);
     $stmt->execute();
     $performanceInsights['averages'] = $stmt->get_result()->fetch_assoc();
