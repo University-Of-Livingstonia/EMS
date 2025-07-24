@@ -25,6 +25,12 @@ if (!in_array($currentUser['role'], ['organizer', 'admin'])) {
     exit;
 }
 
+// Deny access and redirect if user is not verified (only for organizer role)
+if ($currentUser['role'] === 'organizer' && (!isset($currentUser['email_verified']) || $currentUser['email_verified'] != 1)) {
+    header('Location: verify_email.php');
+    exit;
+}
+
 $organizerId = $currentUser['user_id'];
 $currentPage = basename($_SERVER['PHP_SELF']);
 

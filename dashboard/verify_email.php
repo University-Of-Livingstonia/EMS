@@ -8,7 +8,6 @@ $conn = require_once __DIR__ . '/../config/database.php';
 $userModel = new User($conn);
 
 // Initialize session manager and get current user
-require_once __DIR__ . '/../includes/session.php';
 $sessionManager = new SessionManager($conn);
 $currentUser = $sessionManager->getCurrentUser();
 
@@ -20,86 +19,124 @@ $search = $search ?? null;
 $category = $category ?? null;
 $date_filter = $date_filter ?? null;
 
-// Check if token is provided in URL for verification
-if (isset($_GET['token'])) {
-    $token = $_GET['token'];
-
-    // Verify user by token
-    $verified = $userModel->verifyUserByToken($token);
-
-if ($verified) {
-    $message = "Your email has been successfully verified. You can now access all features.";
-    // Redirect to dashboard based on user role after successful verification
-    // Since getUserIdByToken does not exist, fetch user by token directly
-    $stmt = $conn->prepare("SELECT * FROM users WHERE verification_token = ?");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $userResult = $stmt->get_result();
-    $currentUser = $userResult->fetch_assoc();
-if ($currentUser) {
+// Redirect if email already verified
+if ($currentUser && isset($currentUser['email_verified']) && $currentUser['email_verified'] == 1) {
     if ($currentUser['role'] === 'admin') {
         header('Location: ../admin/dashboard.php');
     } elseif ($currentUser['role'] === 'organizer') {
-        header('Location: ../organizer/dashboard.php');
+        header('Location: ../views/organizer/dashboard.php');
     } else {
         header('Location: index.php');
     }
     exit;
-} else {
-    header('Location: index.php');
-    exit;
 }
-} else {
-    $error = "Invalid or expired verification token.";
-}
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
-    // Handle request to send verification email
 
-    $email = trim($_POST['email']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verification_code'])) {
+    $verificationCode = trim($_POST['verification_code']);
+    $userId = $currentUser['user_id'] ?? null;
 
-    // Check if user exists and is not verified
-    $user = $userModel->getByEmail($email);
+    if (!$userId) {
+        $error = "User not logged in.";
+    } elseif (empty($verificationCode)) {
+        $error = "Please enter the verification code.";
+    } else {
+        // Verify the code for the logged-in user
+        $verified = $userModel->verifyUserByCode($userId, $verificationCode);
 
-    if ($user) {
-        if ($user['email_verified']) {
-            $error = "This email is already verified.";
+        if ($verified) {
+            $message = "Your email has been successfully verified. You can now access all features.";
+            // Redirect based on role
+            if ($currentUser['role'] === 'admin') {
+                header('Location: ../admin/dashboard.php');
+            } elseif ($currentUser['role'] === 'organizer') {
+                header('Location: ../views/organizer/dashboard.php');
+            } else {
+                header('Location: index.php');
+            }
+            exit;
         } else {
-            // Generate a unique verification token
-            $token = bin2hex(random_bytes(16));
+            $error = "Invalid or expired verification code.";
+        }
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_verification'])) {
+    // Send verification code email automatically for logged-in user
+    $userId = $currentUser['user_id'] ?? null;
 
-            // Save token to user record
-            $userModel->setVerificationToken($email, $token);
+    if (!$userId) {
+        $error = "User not logged in.";
+    } else {
+        $user = $userModel->getById($userId);
+        if ($user['email_verified']) {
+            $message = "Your email is already verified.";
+        } else {
+            // Generate a verification code
+            $code = bin2hex(random_bytes(3)); // 6 hex chars
 
-            // Prepare verification email
-            $verificationLink = "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/verify_email.php?token=" . $token;
+            // Save code to user record
+            $result = $userModel->setVerificationCode($userId, $code);
+            if (!$result) {
+                $error = "Failed to save verification code. Please try again later.";
+            }
 
-            $subject = "Email Verification - EMS";
-
-            $body = "
+            // Prepare email with code
+            $email = $user['email'];
+            $subject = "Email Verification Code - EMS";
+            $name = htmlspecialchars(trim($user['first_name'] . ' ' . $user['last_name']));
+            $body = '
+            <!DOCTYPE html>
             <html>
             <head>
-                <title>Email Verification</title>
+              <meta charset="UTF-8">
+              <title>Email Verification Code</title>
             </head>
-            <body>
-                <p>Dear " . htmlspecialchars($user['first_name']) . ",</p>
-                <p>Thank you for registering. Please click the link below to verify your email address:</p>
-                <p><a href='" . $verificationLink . "'>Verify Email</a></p>
-                <p>If you did not request this, please ignore this email.</p>
-                <p>Best regards,<br>EMS Team</p>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 20px 0; background-color:rgb(253, 253, 253);">
+                    <img src="https://unilia.ac.mw/wp-content/uploads/2021/11/cropped-unilia_logo-624x91.png" width="365" height="54" alt="University of Livingstonia" style="display: block;">
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <table width="600" cellpadding="20" cellspacing="0" style="background-color: #ffffff; border-radius: 6px; margin-top: 20px;">
+                      <tr>
+                        <td>
+                          <h2 style="color: #003366;">Hello, ' . $name . '!</h2>
+                          <p style="font-size: 16px; color: #333;">
+                            Your email verification code is:
+                          </p>
+                          <p style="text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #4CAF50;">
+                            ' . $code . '
+                          </p>
+                          <p style="font-size: 14px; color: #666;">
+                            Please enter this code in the verification page to verify your email address.
+                          </p>
+                          <p style="font-size: 16px; color: #003366;"><strong>Best regards,<br>EMS Team</strong></p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding: 20px; font-size: 12px; color: #888;">
+                    &copy; ' . date("Y") . ' University of Livingstonia. All rights reserved.
+                  </td>
+                </tr>
+              </table>
             </body>
             </html>
-            ";
+            ';
 
-            // Send email using mailer.php function sendEmail
             if (sendEmail($email, $subject, $body)) {
-                $message = "Verification email sent. Please check your inbox.";
+                $message = "Verification code sent to your email for " . htmlspecialchars($email) . ". Please check your inbox.";
             } else {
-                $error = "Failed to send verification email. Please try again later.";
+                $error = "Failed to send verification code. Please try again later.";
             }
         }
-    } else {
-        $error = "No user found with that email address.";
     }
+} else {
+    // Show form to send verification code email automatically
+    $message = "";
 }
 
 /* $totalPages = ceil($totalEvents / $limit); */
@@ -937,12 +974,23 @@ if ($currentUser) {
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <!-- Email verification request form -->
-                <form method="POST" action="verify_email.php" class="mt-4">
-                    <label for="email" class="form-label">Enter your email to receive a verification link:</label>
-                    <input type="email" id="email" name="email" class="form-control" required placeholder="you@example.com" />
-                    <button type="submit" class="btn btn-primary mt-3">Send Verification Email</button>
-                </form>
+            <!-- Email verification code input form -->
+        <form method="POST" action="verify_email.php" class="mt-4 text-center">
+            <?php if ($message === ""): ?>
+                <p>Click the button below to receive your email verification code for <?= htmlspecialchars($currentUser['email']) ?>.</p>
+                <button type="submit" name="send_verification" class="btn btn-secondary mb-3">Send Verification Code</button>
+            <?php elseif (strpos($message, 'Verification code sent to your email') !== false || isset($_POST['verification_code'])): ?>
+                <p>Enter the verification code sent to your email and click Verify.</p>
+                <div class="mb-2">
+                    <label for="verification_code" class="form-label d-block">Enter the verification code sent to your email:</label>
+                    <input type="text" id="verification_code" name="verification_code" class="form-control mx-auto" style="max-width: 200px;" required placeholder="Enter code here" />
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-secondary mt-3 me-2">Verify Now</button>
+                    <button type="submit" name="send_verification" class="btn btn-secondary mt-3">Resend Code</button>
+                </div>
+            <?php endif; ?>
+        </form>
 
                 <?php if ($message): ?>
                     <div class="alert alert-success mt-3" role="alert">

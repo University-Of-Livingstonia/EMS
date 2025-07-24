@@ -140,8 +140,8 @@ class SessionManager
 
             // Check if account is verified (optional)
             // if (!$user['email_verified']) {
-            //     return ['success' => false, 'message' => 'Please verify your email address first'];
-            // }
+            //    return ['success' => false, 'message' => 'Please verify your email address first'];
+            //}
 
             // Create session
             $this->createUserSession($user);
@@ -654,7 +654,7 @@ class SessionManager
     {
         $redirectUrls = [
             'admin' => '/EMS/admin/dashboard.php',
-            'organizer' => '/EMS/organizer/dashboard.php',
+            'organizer' => '/EMS/views/organizer/dashboard.php',
             'user' => '/EMS/dashboard/index.php'
         ];
 

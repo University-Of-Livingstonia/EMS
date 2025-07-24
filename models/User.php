@@ -117,5 +117,31 @@ class User {
         );
         return $stmt->execute();
     }
+
+    // Set verification code for user by user_id
+    public function setVerificationCode($userId, $code) {
+        $stmt = $this->conn->prepare("UPDATE users SET verification_token = ?, email_verified = 0 WHERE user_id = ?");
+        if (!$stmt) {
+            die("MySQL prepare failed in setVerificationCode: " . $this->conn->error);
+        }
+        $stmt->bind_param("si", $code, $userId);
+        return $stmt->execute();
+    }
+
+    // Verify user by verification code
+    public function verifyUserByCode($userId, $code) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE user_id = ? AND verification_token = ? AND email_verified = 0");
+        $stmt->bind_param("is", $userId, $code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($user = $result->fetch_assoc()) {
+            $stmt = $this->conn->prepare("UPDATE users SET email_verified = 1, verification_token = NULL WHERE user_id = ?");
+            $stmt->bind_param("i", $userId);
+            return $stmt->execute();
+        }
+
+        return false;
+    }
 }
 ?>

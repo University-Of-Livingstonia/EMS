@@ -35,13 +35,12 @@ if ($_POST && isset($_POST['login'])) {
     } else {
         $result = $sessionManager->login($email, $password, $remember);
 
-        if ($result['success']) {
-            $basePath = dirname(dirname($_SERVER['PHP_SELF']));
-            header('Location: ' . $basePath . '/dashboard/index.php');
-            exit;
-        } else {
-            $error = $result['message'];
-        }
+if ($result['success']) {
+    header('Location: ' . $result['redirect']);
+    exit;
+} else {
+    $error = $result['message'];
+}
     }
 }
 
@@ -521,7 +520,7 @@ if (isset($_GET['error']) && $_GET['error'] === 'access_denied') {
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Remember me</label>
                     </div>
-                    <a href="forgot-password.php" class="forgot-password">Forgot Password?</a>
+<a href="../views/public/forgot_password.php" class="forgot-password">Forgot Password?</a>
                 </div>
 
                 <div class="form-group">
