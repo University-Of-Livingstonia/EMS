@@ -1177,7 +1177,7 @@ try {
                         My Events (<?= $totalEvents ?> total)
                     </h3>
                     <div class="card-actions">
-                        <a href="create-event.php" class="organizer-btn organizer-btn-primary">
+                        <a href="create_event.php" class="organizer-btn organizer-btn-primary">
                             <i class="fas fa-plus"></i> Create New Event
                         </a>
                     </div>
@@ -1321,7 +1321,7 @@ try {
                                         You haven't created any events yet. Start by creating your first event!
                                     <?php endif; ?>
                                 </p>
-                                <a href="create-event.php" class="organizer-btn organizer-btn-primary">
+                                <a href="create_event.php" class="organizer-btn organizer-btn-primary">
                                     <i class="fas fa-plus-circle"></i> Create Your First Event
                                 </a>
                             </div>

@@ -15,7 +15,6 @@ $conn = require_once '../config/database.php';
 require_once '../includes/session.php';
 $sessionManager = new SessionManager($conn);
 
-// Require login
 $sessionManager->requireLogin();
 
 $currentUser = $sessionManager->getCurrentUser();
@@ -24,6 +23,17 @@ $userId = $currentUser['user_id'];
 if (!$currentUser['email_verified'] == 1) {
     header('Location: verify_email.php');
     exit;
+}
+
+// Redirect based on role
+if ($currentUser['role'] === 'admin') {
+    header('Location: ../admin/dashboard.php');
+    exit;
+} elseif ($currentUser['role'] === 'organizer') {
+    header('Location: ../organizer/dashboard.php');
+    exit;
+} else {
+    // Default user dashboard
 }
 // Helper functions for dashboard
 if (!function_exists('formatCurrency')) {

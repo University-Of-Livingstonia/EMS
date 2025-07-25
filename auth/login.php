@@ -13,11 +13,24 @@ require_once '../includes/session.php';
 if (!isset($sessionManager)) {
     $sessionManager = initializeSessionManager($conn);
 }
-// Redirect if already logged in
 if (isLoggedIn()) {
     $user = getCurrentUser();
     $basePath = dirname(dirname($_SERVER['PHP_SELF']));
-    header('Location: ' . $basePath . '/dashboard/index.php');
+    // Redirect based on role
+    switch ($user['role']) {
+        case 'admin':
+            header('Location: ' . $basePath . '/admin/dashboard.php');
+            break;
+        case 'organizer':
+            header('Location: ' . $basePath . '/views/organizer/dashboard.php');
+            break;
+        case 'user':
+            header('Location: ' . $basePath . '/dashboard/index.php');
+            break;
+        default:
+            header('Location: ' . $basePath . '/dashboard/index.php');
+            break;
+    }
     exit;
 }
 

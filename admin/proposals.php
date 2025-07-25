@@ -100,8 +100,8 @@ $proposals = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                             <td><span class="badge badge-status <?php echo $p['status']; ?>"><?php echo ucfirst($p['status']); ?></span></td>
                                             <td>
                                                 <a href="event_details.php?id=<?php echo $p['event_id']; ?>" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> View</a>
-                                                <button class="btn btn-sm btn-success" disabled><i class="fas fa-check"></i> Approve</button>
-                                                <button class="btn btn-sm btn-danger" disabled><i class="fas fa-times"></i> Reject</button>
+                                                <button class="btn btn-sm btn-success approve-btn" data-event-id="<?php echo $p['event_id']; ?>"><i class="fas fa-check"></i> Approve</button>
+                                                <button class="btn btn-sm btn-danger reject-btn" data-event-id="<?php echo $p['event_id']; ?>"><i class="fas fa-times"></i> Reject</button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -116,5 +116,59 @@ $proposals = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const approveButtons = document.querySelectorAll('.approve-btn');
+            const rejectButtons = document.querySelectorAll('.reject-btn');
+
+            approveButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const eventId = button.getAttribute('data-event-id');
+                    if (confirm('Are you sure you want to approve this event?')) {
+                        updateEventStatus(eventId, 'approve', button);
+                    }
+                });
+            });
+
+            rejectButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const eventId = button.getAttribute('data-event-id');
+                    if (confirm('Are you sure you want to reject this event? This action cannot be undone.')) {
+                        updateEventStatus(eventId, 'reject', button);
+                    }
+                });
+            });
+
+            function updateEventStatus(eventId, action, button) {
+                button.disabled = true;
+                fetch('api/event_actions.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ event_id: eventId, action: action }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    button.disabled = false;
+                    if (data.success) {
+                        alert(data.message);
+                        // Remove the event row from the table
+                        const row = button.closest('tr');
+                        if (row) {
+                            row.remove();
+                        }
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    alert('Network error occurred');
+                    console.error('Error:', error);
+                });
+            }
+        });
+    </script>
 </body>
 </html>

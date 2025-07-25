@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/functions.php';
+
 /**
  * 🔐 Epic Session Management System - EMS
  * Ekwendeni Mighty Campus Event Management System

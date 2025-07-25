@@ -42,17 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
         'category' => $_POST['category'] ?? '',
         'start_datetime' => $_POST['start_datetime'] ?? '',
         'end_datetime' => $_POST['end_datetime'] ?? '',
-        'location' => trim($_POST['location'] ?? ''),
+        'venue' => trim($_POST['venue'] ?? ''),
         'max_attendees' => intval($_POST['max_attendees'] ?? 0),
         'price' => floatval($_POST['price'] ?? 0),
         'is_public' => isset($_POST['is_public']) ? 1 : 0,
-        'requires_approval' => isset($_POST['requires_approval']) ? 1 : 0,
         'tags' => trim($_POST['tags'] ?? ''),
-        'special_instructions' => trim($_POST['special_instructions'] ?? ''),
         'contact_email' => trim($_POST['contact_email'] ?? ''),
         'contact_phone' => trim($_POST['contact_phone'] ?? ''),
-        'budget' => floatval($_POST['budget'] ?? 0),
-        'expected_attendees' => intval($_POST['expected_attendees'] ?? 0)
+        'image' => null
     ];
     
     // Validation
@@ -76,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
         $errors[] = "End date and time is required";
     }
     
-    if (empty($formData['location'])) {
-        $errors[] = "Event location is required";
+    if (empty($formData['venue'])) {
+        $errors[] = "Event venue is required";
     }
     
     if ($formData['max_attendees'] <= 0) {
@@ -103,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
     }
     
     // Handle image upload
-    $imagePath = null;
     if (isset($_FILES['event_image']) && $_FILES['event_image']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = '../../uploads/events/';
         if (!file_exists($uploadDir)) {
@@ -125,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
         }
         
         if (empty($errors) && move_uploaded_file($_FILES['event_image']['tmp_name'], $targetPath)) {
-            $imagePath = 'uploads/events/' . $fileName;
+            $formData['image'] = 'uploads/events/' . $fileName;
         } elseif (empty($errors)) {
             $errors[] = "Failed to upload image";
         }
@@ -134,35 +130,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
     // If no errors, create the event
     if (empty($errors)) {
         try {
+            $tagsJson = json_encode(array_filter(array_map('trim', explode(',', $formData['tags']))));
+            $contactInfoJson = json_encode([
+                'email' => $formData['contact_email'],
+                'phone' => $formData['contact_phone']
+            ]);
+            
             $stmt = $conn->prepare("
                 INSERT INTO events (
                     title, description, category, start_datetime, end_datetime, 
-                    location, max_attendees, price, is_public, requires_approval,
-                    organizer_id, image_path, tags, special_instructions,
-                    contact_email, contact_phone, budget, expected_attendees,
-                    status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                    venue, max_attendees, price, is_public, organizer_id, 
+                    tags, contact_info, image, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
             
-            $stmt->bind_param("ssssssidiiisssssdis",
+            $stmt->bind_param("ssssssidisssss",
                 $formData['title'],
                 $formData['description'],
                 $formData['category'],
                 $formData['start_datetime'],
                 $formData['end_datetime'],
-                $formData['location'],
+                $formData['venue'],
                 $formData['max_attendees'],
                 $formData['price'],
                 $formData['is_public'],
-                $formData['requires_approval'],
                 $currentUser['user_id'],
-                $imagePath,
-                $formData['tags'],
-                $formData['special_instructions'],
-                $formData['contact_email'],
-                $formData['contact_phone'],
-                $formData['budget'],
-                $formData['expected_attendees']
+                $tagsJson,
+                $contactInfoJson,
+                $formData['image']
             );
             
             if ($stmt->execute()) {
@@ -173,9 +168,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
                 $formData = [];
                 
                 // Redirect after short delay
-                header("refresh:2;url=../organizer/dashboard.php");
+                // Redirect based on user role
+                if ($currentUser['role'] === 'organizer') {
+                    header("refresh:2;url=../organizer/dashboard.php");
+                } elseif ($currentUser['role'] === 'admin') {
+                    header("refresh:2;url=../../admin/dashboard.php");
+                } else {
+                    header("refresh:2;url=../../dashboard/index.php");
+                }
             } else {
                 $errors[] = "Failed to create event. Please try again.";
+                error_log("Create Event Insert Error: " . $stmt->error);
             }
             
         } catch (Exception $e) {
@@ -199,7 +202,6 @@ $categories = [
     'other' => '📋 Other'
 ];
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -602,34 +604,6 @@ $categories = [
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* 📊 Progress Steps */
-        .progress-steps {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-        
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin: 0 0.5rem;
-        }
-        
-        .step.active {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .step.inactive {
-            background: var(--border-color);
-            color: var(--text-muted);
-        }
     </style>
 </head>
 <body>
@@ -788,12 +762,12 @@ $categories = [
                     </h3>
                     
                     <div class="form-group">
-                        <label class="form-label required">Event Location</label>
+                        <label class="form-label required">Event Venue</label>
                         <input type="text" 
-                               name="location" 
+                               name="venue" 
                                class="form-control" 
-                               placeholder="Enter event location..."
-                               value="<?= htmlspecialchars($formData['location'] ?? '') ?>"
+                               placeholder="Enter event venue..."
+                               value="<?= htmlspecialchars($formData['venue'] ?? '') ?>"
                                required>
                         <div class="form-text">Specify the exact venue or location</div>
                     </div>
@@ -809,51 +783,26 @@ $categories = [
                                    value="<?= htmlspecialchars($formData['max_attendees'] ?? '') ?>"
                                    required>
                         </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Expected Attendees</label>
-                            <input type="number" 
-                                   name="expected_attendees" 
-                                   class="form-control" 
-                                   placeholder="50"
-                                   min="0"
-                                   value="<?= htmlspecialchars($formData['expected_attendees'] ?? '') ?>">
-                            <div class="form-text">Your estimated attendance</div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Pricing & Budget Section -->
+                <!-- Pricing Section -->
                 <div class="form-section">
                     <h3 class="section-title">
                         <i class="fas fa-money-bill-wave"></i>
-                        Pricing & Budget
+                        Pricing
                     </h3>
                     
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Ticket Price (MWK)</label>
-                            <input type="number" 
-                                   name="price" 
-                                   class="form-control" 
-                                   placeholder="0"
-                                   min="0"
-                                   step="0.01"
-                                   value="<?= htmlspecialchars($formData['price'] ?? '') ?>">
-                            <div class="form-text">Set to 0 for free events</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Event Budget (MWK)</label>
-                            <input type="number" 
-                                   name="budget" 
-                                   class="form-control" 
-                                   placeholder="0"
-                                   min="0"
-                                   step="0.01"
-                                   value="<?= htmlspecialchars($formData['budget'] ?? '') ?>">
-                            <div class="form-text">Total budget for organizing this event</div>
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Ticket Price (MWK)</label>
+                        <input type="number" 
+                               name="price" 
+                               class="form-control" 
+                               placeholder="0"
+                               min="0"
+                               step="0.01"
+                               value="<?= htmlspecialchars($formData['price'] ?? '') ?>">
+                        <div class="form-text">Set to 0 for free events</div>
                     </div>
                 </div>
 
@@ -892,69 +841,22 @@ $categories = [
                         Contact Information
                     </h3>
                     
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Contact Email</label>
-                            <input type="email" 
-                                   name="contact_email" 
-                                   class="form-control" 
-                                   placeholder="contact@example.com"
-                                   value="<?= htmlspecialchars($formData['contact_email'] ?? $currentUser['email']) ?>">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Contact Phone</label>
-                            <input type="tel" 
-                                   name="contact_phone" 
-                                   class="form-control" 
-                                   placeholder="+265 123 456 789"
-                                   value="<?= htmlspecialchars($formData['contact_phone'] ?? $currentUser['phone_number']) ?>">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Additional Information Section -->
-                <div class="form-section">
-                    <h3 class="section-title">
-                        <i class="fas fa-cog"></i>
-                        Additional Settings
-                    </h3>
-                    
                     <div class="form-group">
-                        <label class="form-label">Special Instructions</label>
-                        <textarea name="special_instructions" 
-                                  class="form-control" 
-                                  rows="4"
-                                  placeholder="Any special instructions for attendees..."><?= htmlspecialchars($formData['special_instructions'] ?? '') ?></textarea>
-                        <div class="form-text">Additional information attendees should know</div>
+                        <label class="form-label">Contact Email</label>
+                        <input type="email" 
+                               name="contact_email" 
+                               class="form-control" 
+                               placeholder="contact@example.com"
+                               value="<?= htmlspecialchars($formData['contact_email'] ?? $currentUser['email']) ?>">
                     </div>
                     
                     <div class="form-group">
-                        <div class="form-check">
-                            <input type="checkbox" 
-                                   name="is_public" 
-                                   id="isPublic" 
-                                   class="form-check-input"
-                                   <?= ($formData['is_public'] ?? 1) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="isPublic">
-                                Make this event public
-                            </label>
-                        </div>
-                        <div class="form-text">Public events are visible to all users</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <div class="form-check">
-                            <input type="checkbox" 
-                                   name="requires_approval" 
-                                   id="requiresApproval" 
-                                   class="form-check-input"
-                                   <?= ($formData['requires_approval'] ?? 0) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="requiresApproval">
-                                Require manual approval for registrations
-                            </label>
-                        </div>
-                        <div class="form-text">You'll need to approve each registration manually</div>
+                        <label class="form-label">Contact Phone</label>
+                        <input type="tel" 
+                               name="contact_phone" 
+                               class="form-control" 
+                               placeholder="+265 123 456 789"
+                               value="<?= htmlspecialchars($formData['contact_phone'] ?? $currentUser['phone_number']) ?>">
                     </div>
                 </div>
 
@@ -1182,4 +1084,3 @@ $categories = [
         console.log('✨ Ready to create amazing events!');
     </script>
 </body>
-</html>
