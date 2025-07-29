@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../models/User.php';
-//require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 $conn = require_once __DIR__ . '/../config/database.php';
 $userModel = new User($conn);
@@ -966,7 +966,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verification_code']))
                         <i class="fas fa-calendar-alt"></i> View All Events
                     </a>
                 <?php else: ?>
-                    <p>There are no upcoming events at the moment. Check back later for exciting new events!</p>
                     <?php if ($currentUser['role'] === 'organizer'): ?>
                         <a href="../organizer/create-event.php" class="btn btn-primary">
                             <i class="fas fa-plus-circle"></i> Create Your First Event

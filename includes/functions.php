@@ -158,23 +158,6 @@ function handleFileUpload($file, $uploadDir = 'uploads/', $allowedTypes = ['jpg'
 }
 
 /**
- * 📧 Send email notification
- */
-function sendEmail($to, $subject, $message, $isHTML = false)
-{
-    try {
-        // For now, we'll just log the email
-        error_log("EMAIL TO: $to, SUBJECT: $subject, MESSAGE: $message");
-
-        // TODO: Implement actual email sending
-        return ['success' => true, 'message' => 'Email sent successfully'];
-    } catch (Exception $e) {
-        error_log("Email error: " . $e->getMessage());
-        return ['success' => false, 'message' => 'Failed to send email'];
-    }
-}
-
-/**
  * 🔔 Create notification
  */
 function createNotification($conn, $userId, $title, $message, $type = 'system', $relatedId = null)
@@ -406,35 +389,6 @@ function getFlashMessage()
     }
 
     return null;
-}
-
-/**
- * 🎨 Display flash message HTML
- */
-function displayFlashMessage()
-{
-    $flash = getFlashMessage();
-    if ($flash) {
-        $alertClass = [
-            'success' => 'alert-success',
-            'error' => 'alert-danger',
-            'warning' => 'alert-warning',
-            'info' => 'alert-info'
-        ][$flash['type']] ?? 'alert-info';
-
-        $icon = [
-            'success' => 'fas fa-check-circle',
-            'error' => 'fas fa-exclamation-triangle',
-            'warning' => 'fas fa-exclamation-circle',
-            'info' => 'fas fa-info-circle'
-        ][$flash['type']] ?? 'fas fa-info-circle';
-
-        echo '<div class="alert ' . $alertClass . ' alert-dismissible fade show" role="alert">';
-        echo '<i class="' . $icon . ' me-2"></i>';
-        echo htmlspecialchars($flash['message']);
-        echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
-        echo '</div>';
-    }
 }
 
 /**
