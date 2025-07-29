@@ -11,6 +11,14 @@ require_once '../controllers/AuthController.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $auth = new AuthController();
+
+    // Generate username automatically: first name + random 4 digit number
+    if (isset($_POST['first_name'])) {
+        $firstName = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(trim($_POST['first_name'])));
+        $randomNumber = rand(1000, 9999);
+        $_POST['username'] = $firstName . $randomNumber;
+    }
+
     $auth->register($_POST); // Send form data to controller
 }
 
@@ -28,15 +36,14 @@ $formData = [];
 // Handle registration form submission
 if ($_POST && isset($_POST['register'])) {
     $formData = [
-        'username' => trim($_POST['username'] ?? ''),
         'email' => trim($_POST['email'] ?? ''),
         'password' => $_POST['password'] ?? '',
         'confirm_password' => $_POST['confirm_password'] ?? '',
         'first_name' => trim($_POST['first_name'] ?? ''),
         'last_name' => trim($_POST['last_name'] ?? ''),
-        'department' => trim($_POST['department'] ?? ''),
         'phone_number' => trim($_POST['phone_number'] ?? ''),
-        'role' => $_POST['role'] ?? 'user'
+        'role' => $_POST['role'] ?? 'user',
+        'username' => trim($_POST['username'] ?? '') // username is generated above
     ];
 
     // Validate passwords match
@@ -560,23 +567,9 @@ if ($_POST && isset($_POST['register'])) {
                     </div>
                 </div>
 
-                <!-- Username and Email -->
+                <!-- Email -->
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <div class="input-wrapper">
-                            <input type="text"
-                                id="username"
-                                name="username"
-                                class="form-control"
-                                placeholder="Choose username"
-                                value="<?php echo htmlspecialchars($formData['username'] ?? ''); ?>"
-                                required>
-                            <i class="fas fa-at input-icon"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
+                    <div class="form-group" style="width: 207%;">
                         <label for="email">Email Address</label>
                         <div class="input-wrapper">
                             <input type="email"
@@ -635,26 +628,9 @@ if ($_POST && isset($_POST['register'])) {
                     </div>
                 </div>
 
-                <!-- Department and Phone -->
+                <!-- Phone Number and Account Type side by side -->
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="department">Department</label>
-                        <div class="input-wrapper">
-                            <select id="department" name="department" class="form-control">
-                                <option value="">Select Department</option>
-                                <option value="Computer Science" <?php echo ($formData['department'] ?? '') === 'Computer Science' ? 'selected' : ''; ?>>Computer Science</option>
-                                <option value="Business Administration" <?php echo ($formData['department'] ?? '') === 'Business Administration' ? 'selected' : ''; ?>>Business Administration</option>
-                                <option value="Education" <?php echo ($formData['department'] ?? '') === 'Education' ? 'selected' : ''; ?>>Education</option>
-                                <option value="Theology" <?php echo ($formData['department'] ?? '') === 'Theology' ? 'selected' : ''; ?>>Theology</option>
-                                <option value="Nursing" <?php echo ($formData['department'] ?? '') === 'Nursing' ? 'selected' : ''; ?>>Nursing</option>
-                                <option value="Agriculture" <?php echo ($formData['department'] ?? '') === 'Agriculture' ? 'selected' : ''; ?>>Agriculture</option>
-                                <option value="Other" <?php echo ($formData['department'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
-                            </select>
-                            <i class="fas fa-building input-icon"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
+                    <div class="form-group" style="width: 100%;">
                         <label for="phone_number">Phone Number</label>
                         <div class="input-wrapper">
                             <input type="tel"
@@ -666,17 +642,16 @@ if ($_POST && isset($_POST['register'])) {
                             <i class="fas fa-phone input-icon"></i>
                         </div>
                     </div>
-                </div>
 
-                <!-- Role Selection -->
-                <div class="form-group">
-                    <label for="role">Account Type</label>
-                    <div class="input-wrapper">
-                        <select id="role" name="role" class="form-control" required>
-                            <option value="user" <?php echo ($formData['role'] ?? 'user') === 'user' ? 'selected' : ''; ?>>Student</option>
-                            <option value="organizer" <?php echo ($formData['role'] ?? '') === 'organizer' ? 'selected' : ''; ?>>Event Organizer</option>
-                        </select>
-                        <i class="fas fa-user-tag input-icon"></i>
+                    <div class="form-group" style="width: 100%;">
+                        <label for="role">Account Type</label>
+                        <div class="input-wrapper">
+                            <select id="role" name="role" class="form-control" required>
+                                <option value="user" <?php echo ($formData['role'] ?? 'user') === 'user' ? 'selected' : ''; ?>>Student</option>
+                                <option value="organizer" <?php echo ($formData['role'] ?? '') === 'organizer' ? 'selected' : ''; ?>>Event Organizer</option>
+                            </select>
+                            <i class="fas fa-user-tag input-icon"></i>
+                        </div>
                     </div>
                 </div>
 

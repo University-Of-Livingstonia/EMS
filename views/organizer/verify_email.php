@@ -120,13 +120,10 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_verification
             ';
 
             if (sendEmail($email, $subject, $body)) {
-                // Redirect back silently after sending email
-                header('Location: verify_email.php');
-                exit;
+                // Set success message instead of redirecting
+                $message = "Verification code sent to your email for " . htmlspecialchars($email) . ". Please check your inbox.";
             } else {
-                // Redirect back silently on failure
-                header('Location: verify_email.php');
-                exit;
+                $error = "Failed to send verification code. Please try again later.";
             }
         }
     }
@@ -523,20 +520,25 @@ try {
                 <?php if ($error && !isset($_POST['send_verification'])): ?>
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
-                <form method="POST" action="">
-                    <?php if ($message === ""): ?>
-                        <p>Click the button below to receive your email verification code for <?= htmlspecialchars($currentUser['email']) ?>.</p>
-                        <button type="submit" name="send_verification" class="btn btn-secondary">Send Verification Code</button>
-                    <?php else: ?>
-                        <p>Enter the verification code sent to your email and click Verify.</p>
-                        <label for="verification_code">Verification Code:</label>
-                        <input type="text" id="verification_code" name="verification_code" placeholder="Enter code here" />
-                        <div style="display: flex; justify-content: space-between; max-width: 300px; margin-top: 10px;">
-                            <button type="submit" class="btn btn-primary">Verify</button>
-                            <button type="submit" name="send_verification" class="btn btn-secondary">Resend Code</button>
-                        </div>
-                    <?php endif; ?>
-                </form>
+                     <!-- Email verification code input form -->
+        <?php if ($message === ""): ?>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center">
+                <p>Click the button below to receive your email verification code for <?= htmlspecialchars($currentUser['email']) ?>.</p>
+                <button type="submit" name="send_verification" class="btn btn-secondary mb-3">Send Verification Code</button>
+            </form>
+        <?php elseif (strpos($message, 'Verification code sent to your email') !== false || isset($_POST['verification_code'])): ?>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center" style="display: inline-block; margin-right: 10px; vertical-align: top;">
+                <p>Enter the verification code sent to your email and click Verify.</p>
+                <div class="mb-2">
+                    <label for="verification_code" class="form-label d-block">Enter the verification code sent to your email:</label>
+                    <input type="text" id="verification_code" name="verification_code" class="form-control mx-auto" style="max-width: 200px;" required placeholder="Enter code here" />
+                </div>
+                <button type="submit" class="btn btn-secondary mt-3" style="width: auto; min-width: 120px;">Verify Now</button>
+            </form>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center" style="display: inline-block; vertical-align: top;">
+                <button type="submit" name="send_verification" class="btn btn-secondary mt-3" style="width: auto; min-width: 120px;">Resend Code</button>
+            </form>
+        <?php endif; ?>
             </div>
         </div>
     </div>

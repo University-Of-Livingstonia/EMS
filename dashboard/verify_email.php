@@ -974,22 +974,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verification_code']))
                 <?php endif; ?>
 
             <!-- Email verification code input form -->
-        <form method="POST" action="verify_email.php" class="mt-4 text-center">
-            <?php if ($message === ""): ?>
+        <?php if ($message === ""): ?>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center">
                 <p>Click the button below to receive your email verification code for <?= htmlspecialchars($currentUser['email']) ?>.</p>
                 <button type="submit" name="send_verification" class="btn btn-secondary mb-3">Send Verification Code</button>
-            <?php elseif (strpos($message, 'Verification code sent to your email') !== false || isset($_POST['verification_code'])): ?>
+            </form>
+        <?php elseif (strpos($message, 'Verification code sent to your email') !== false || isset($_POST['verification_code'])): ?>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center" style="display: inline-block; margin-right: 10px;">
                 <p>Enter the verification code sent to your email and click Verify.</p>
                 <div class="mb-2">
                     <label for="verification_code" class="form-label d-block">Enter the verification code sent to your email:</label>
                     <input type="text" id="verification_code" name="verification_code" class="form-control mx-auto" style="max-width: 200px;" required placeholder="Enter code here" />
                 </div>
-                <div>
-                    <button type="submit" class="btn btn-secondary mt-3 me-2">Verify Now</button>
-                    <button type="submit" name="send_verification" class="btn btn-secondary mt-3">Resend Code</button>
-                </div>
-            <?php endif; ?>
-        </form>
+                <button type="submit" class="btn btn-secondary mt-3" style="width: auto; min-width: 120px;">Verify Now</button>
+            </form>
+            <form method="POST" action="verify_email.php" class="mt-4 text-center" style="display: inline-block;">
+                <button type="submit" name="send_verification" class="btn btn-secondary mt-3" style="width: auto; min-width: 120px;">Resend Code</button>
+            </form>
+        <?php endif; ?>
 
                 <?php if ($message): ?>
                     <div class="alert alert-success mt-3" role="alert">
