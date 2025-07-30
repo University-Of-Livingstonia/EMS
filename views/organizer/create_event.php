@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
             
-            $stmt->bind_param("ssssssidisssss",
+            $stmt->bind_param("ssssssiidssss",
                 $formData['title'],
                 $formData['description'],
                 $formData['category'],
@@ -290,9 +290,12 @@ $categories = [
         .form-container {
             background: white;
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2rem 3rem;
             box-shadow: var(--shadow);
             margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .form-section {
@@ -366,7 +369,10 @@ $categories = [
         .editor-container {
             border: 2px solid var(--border-color);
             border-radius: 10px;
-            overflow: hidden;
+            overflow: auto;
+            max-height: 200px;
+            min-height: 100px;
+            resize: vertical;
         }
         
         .editor-container.focused {
@@ -426,7 +432,7 @@ $categories = [
         /* 🎯 Form Grid */
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
         
@@ -950,18 +956,30 @@ $categories = [
 
         // Form validation
         document.getElementById('createEventForm').addEventListener('submit', function(e) {
-            const startDate = new Date(document.querySelector('input[name="start_datetime"]').value);
-            const endDate = new Date(document.querySelector('input[name="end_datetime"]').value);
+            const startDateInput = document.querySelector('input[name="start_datetime"]');
+            const endDateInput = document.querySelector('input[name="end_datetime"]');
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
             const now = new Date();
             
-            // Check if start date is in the future
+            // Check if start date is provided and in the future
+            if (!startDateInput.value) {
+                alert('Start date and time is required');
+                e.preventDefault();
+                return;
+            }
             if (startDate <= now) {
                 alert('Start date must be in the future');
                 e.preventDefault();
                 return;
             }
             
-            // Check if end date is after start date
+            // Check if end date is provided and after start date
+            if (!endDateInput.value) {
+                alert('End date and time is required');
+                e.preventDefault();
+                return;
+            }
             if (endDate <= startDate) {
                 alert('End date must be after start date');
                 e.preventDefault();
@@ -974,7 +992,7 @@ $categories = [
             // Show loading state
             const submitBtn = document.querySelector('button[name="create_event"]');
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Event...';
-            submitBtn.disabled = true;
+            submitBtn.disabled = false;
         });
 
         // Auto-save draft functionality

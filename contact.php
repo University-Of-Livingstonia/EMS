@@ -1035,7 +1035,7 @@ if ($_POST && isset($_POST['send_message'])) {
             
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    submitBtn.disabled = true;
+                    submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
                 });
             }

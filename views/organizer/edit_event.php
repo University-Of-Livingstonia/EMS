@@ -1546,7 +1546,7 @@ try {
             // Show loading state
             const submitBtn = document.querySelector('button[name="update_event"]');
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Event...';
-            submitBtn.disabled = true;
+            submitBtn.disabled = false;
         });
 
         console.log('✏️ Edit Event Page Loaded');

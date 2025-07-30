@@ -758,7 +758,7 @@ try {
             // Show loading state
             const submitBtn = document.querySelector('button[name="send_message"]');
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Message...';
-            submitBtn.disabled = true;
+            submitBtn.disabled = false;
         });
 
         console.log('📧 Communications Page Loaded');

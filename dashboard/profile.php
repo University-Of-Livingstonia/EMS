@@ -1383,7 +1383,7 @@ try {
                         if (submitBtn) {
                             const originalText = submitBtn.innerHTML;
                             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                            submitBtn.disabled = true;
+                            submitBtn.disabled = false;
 
                             // Re-enable after 3 seconds if form doesn't submit
                             setTimeout(() => {

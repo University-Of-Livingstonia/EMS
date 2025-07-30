@@ -1451,7 +1451,7 @@ try {
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span><?= htmlspecialchars($event['location']) ?></span>
+                                        <span><?= htmlspecialchars($event['venue']) ?></span>
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-users"></i>

@@ -79,21 +79,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Create duplicate
                     $stmt = $conn->prepare("
                         INSERT INTO events (title, description, start_datetime, end_datetime, location, 
-                                          max_attendees, ticket_price, organizer_id, status, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', NOW())
+                                          max_attendees, organizer_id, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', NOW())
                     ");
 
                     $newTitle = $originalEvent['title'] . ' (Copy)';
                     $stmt->bind_param(
-                        "sssssiid",
+                        "sssssiis",
                         $newTitle,
                         $originalEvent['description'],
                         $originalEvent['start_datetime'],
                         $originalEvent['end_datetime'],
                         $originalEvent['location'],
                         $originalEvent['max_attendees'],
-                        $originalEvent['ticket_price'],
-                        $organizerId
+                        $organizerId,
+                        $originalEvent['status']
                     );
 
                     $stmt->execute();
@@ -1207,7 +1207,7 @@ try {
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span><?= htmlspecialchars($event['location']) ?></span>
+                                        <span><?= htmlspecialchars($event['venue']) ?></span>
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-users"></i>
@@ -1215,7 +1215,20 @@ try {
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-money-bill-wave"></i>
-                                        <span>K<?= number_format($event['ticket_price'], 0) ?> per ticket</span>
+                                        <span>
+                                            <?php
+                                            // Display minimum ticket price for the event or "Free"
+                                            $minPrice = 0;
+                                            $stmtPrice = $conn->prepare("SELECT MIN(price) as min_price FROM tickets WHERE event_id = ?");
+                                            $stmtPrice->bind_param("i", $event['event_id']);
+                                            $stmtPrice->execute();
+                                            $resultPrice = $stmtPrice->get_result()->fetch_assoc();
+                                            if ($resultPrice && $resultPrice['min_price'] !== null) {
+                                                $minPrice = $resultPrice['min_price'];
+                                            }
+                                            echo $minPrice > 0 ? "K" . number_format($minPrice, 0) . " per ticket" : "Free";
+                                            ?>
+                                        </span>
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-calendar-plus"></i>
