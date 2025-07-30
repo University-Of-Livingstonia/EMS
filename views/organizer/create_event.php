@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
                     title, description, category, start_datetime, end_datetime, 
                     venue, max_attendees, price, is_public, organizer_id, 
                     tags, contact_info, image, status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', NOW())
             ");
             
             $stmt->bind_param("ssssssiidssss",
@@ -788,6 +788,15 @@ $categories = [
                                    min="1"
                                    value="<?= htmlspecialchars($formData['max_attendees'] ?? '') ?>"
                                    required>
+                        </div>
+                        <div class="form-group form-check" style="align-items: center;">
+                            <input type="checkbox" 
+                                   name="is_public" 
+                                   id="isPublic" 
+                                   class="form-check-input"
+                                   <?= isset($formData['is_public']) && $formData['is_public'] ? 'checked' : 'checked' ?>>
+                            <label for="isPublic" class="form-check-label">Public Event</label>
+                            <div class="form-text">Check to make the event visible to the public</div>
                         </div>
                     </div>
                 </div>
