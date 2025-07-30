@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
                     title, description, category, start_datetime, end_datetime, 
                     venue, max_attendees, price, is_public, organizer_id, 
                     tags, contact_info, image, status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
             
             $stmt->bind_param("ssssssiidssss",

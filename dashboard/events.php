@@ -1174,7 +1174,7 @@ $totalPages = ceil($totalEvents / $limit);
                     <?php else: ?>
                         <p>There are no upcoming events at the moment. Check back later for exciting new events!</p>
                         <?php if ($currentUser['role'] === 'organizer'): ?>
-                            <a href="../organizer/create-event.php" class="btn btn-primary">
+                            <a href="../organizer/create_event.php" class="btn btn-primary">
                                 <i class="fas fa-plus-circle"></i> Create Your First Event
                             </a>
                         <?php endif; ?>

@@ -1255,12 +1255,12 @@ try {
                                     </div>
 
                                     <div class="event-actions">
-                                        <a href="view-event.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-primary">
+                                        <a href="view_event.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-primary">
                                             <i class="fas fa-eye"></i> View Details
                                         </a>
 
                                         <?php if ($event['status'] === 'draft' || $event['status'] === 'rejected'): ?>
-                                            <a href="edit-event.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-warning">
+                                            <a href="edit_event.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-warning">
                                                 <i class="fas fa-edit"></i> Edit Event
                                             </a>
                                         <?php endif; ?>

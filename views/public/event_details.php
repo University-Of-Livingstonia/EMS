@@ -51,7 +51,7 @@ $isLoggedIn = $sessionManager->isLoggedIn();
     <div class="container">
         <div class="event-header">
             <h1><?php echo htmlspecialchars($event['title']); ?></h1>
-            <p><strong>Location:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
+            <p><strong>Location:</strong> <?php echo htmlspecialchars($event['venue']); ?></p>
             <p><strong>Date:</strong> <?php echo date('F j, Y', strtotime($event['start_datetime'])); ?> to <?php echo date('F j, Y', strtotime($event['end_datetime'])); ?></p>
         </div>
 
@@ -60,7 +60,7 @@ $isLoggedIn = $sessionManager->isLoggedIn();
             <p><strong>Type:</strong> <?php echo htmlspecialchars($event['event_type']); ?></p>
             <p><strong>Status:</strong> <?php echo htmlspecialchars($event['status']); ?></p>
             <p><strong>Max Attendees:</strong> <?php echo htmlspecialchars($event['max_attendees']); ?></p>
-            <p><strong>Ticket Price:</strong> K<?php echo number_format($event['ticket_price'], 0); ?></p>
+            <p><strong>Ticket Price:</strong> K<?php echo number_format($event['price'], 0); ?></p>
         </div>
 
         <div class="event-description">

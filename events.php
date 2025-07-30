@@ -1028,7 +1028,7 @@ $totalPages = ceil($totalEvents / $limit);
                             <i class="fas fa-refresh me-2"></i>View All Events
                         </a>
                         <?php if ($isLoggedIn && $currentUser['role'] === 'organizer'): ?>
-                            <a href="organizer/create-event.php" class="btn-event btn-outline-event">
+                            <a href="organizer/create_event.php" class="btn-event btn-outline-event">
                                 <i class="fas fa-plus me-2"></i>Create Event
                             </a>
                         <?php endif; ?>
@@ -1066,7 +1066,7 @@ $totalPages = ceil($totalEvents / $limit);
                             
                             <div class="event-content">
                                 <h3 class="event-title">
-                                    <a href="event-details.php?id=<?= $event['event_id'] ?>">
+                                    <a href="views/public/event_details.php?id=<?= $event['event_id'] ?>">
                                         <?= htmlspecialchars($event['title']) ?>
                                     </a>
                                 </h3>
@@ -1087,7 +1087,7 @@ $totalPages = ceil($totalEvents / $limit);
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span><?= htmlspecialchars($event['location']) ?></span>
+                                        <span><?= htmlspecialchars($event['venue']) ?></span>
                                     </div>
                                                                        <div class="event-meta-item">
                                         <i class="fas fa-user"></i>
@@ -1113,7 +1113,7 @@ $totalPages = ceil($totalEvents / $limit);
                                 </div>
                                 
                                 <div class="event-actions">
-                                    <a href="event-details.php?id=<?= $event['event_id'] ?>" 
+                                    <a href="views/public/event_details.php?id=<?= $event['event_id'] ?>" 
                                        class="btn-event btn-outline-event">
                                         <i class="fas fa-info-circle me-1"></i>Details
                                     </a>
@@ -1130,7 +1130,7 @@ $totalPages = ceil($totalEvents / $limit);
                                             </button>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <a href="auth/login.php?redirect=<?= urlencode('event-details.php?id=' . $event['event_id']) ?>" 
+                                        <a href="auth/login.php?redirect=<?= urlencode('event_details.php?id=' . $event['event_id']) ?>" 
                                            class="btn-event btn-primary-event">
                                             <i class="fas fa-sign-in-alt me-1"></i>Login to Register
                                         </a>
