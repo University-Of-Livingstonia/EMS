@@ -87,7 +87,13 @@ try {
     ";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
+    if ($stmt === false) {
+        error_log("My events query prepare failed: " . $conn->error);
+        throw new Exception("Database query error");
+    }
+    if ($types) {
+        $stmt->bind_param($types, ...$params);
+    }
     $stmt->execute();
     $myEvents = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 

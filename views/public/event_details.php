@@ -65,7 +65,7 @@ $isLoggedIn = $sessionManager->isLoggedIn();
 
         <div class="event-description">
             <h3>Description</h3>
-            <p><?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
+            <div><?php echo $event['description']; ?></div>
         </div>
 
         <?php if ($isLoggedIn): ?>

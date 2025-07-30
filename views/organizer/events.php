@@ -1189,7 +1189,7 @@ try {
                                 <div class="event-header">
                                     <div>
                                         <h3 class="event-title"><?= htmlspecialchars($event['title']) ?></h3>
-                                        <p class="event-description"><?= htmlspecialchars(substr($event['description'], 0, 150)) ?>...</p>
+                                        <p class="event-description"><?= substr(strip_tags($event['description']), 0, 150) ?>...</p>
                                     </div>
                                     <span class="event-status status-<?= $event['status'] ?>">
                                         <?= ucfirst($event['status']) ?>
@@ -1255,7 +1255,7 @@ try {
                                     </div>
 
                                     <div class="event-actions">
-                                        <a href="view_event.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-primary">
+                                        <a href="/EMS/views/public/event_details.php?id=<?= $event['event_id'] ?>" class="organizer-btn organizer-btn-primary">
                                             <i class="fas fa-eye"></i> View Details
                                         </a>
 

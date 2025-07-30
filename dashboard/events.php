@@ -1071,7 +1071,7 @@ $totalPages = ceil($totalEvents / $limit);
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span><?php echo htmlspecialchars($event['location']); ?></span>
+                                        <span><?php echo htmlspecialchars($event['venue']); ?></span>
                                     </div>
                                     <div class="event-meta-item">
                                         <i class="fas fa-users"></i>
@@ -1093,7 +1093,7 @@ $totalPages = ceil($totalEvents / $limit);
                                     </div>
 
                                     <div class="event-actions">
-                                        <a href="../events/view.php?id=<?php echo $event['event_id']; ?>" class="btn btn-outline">
+                                        <a href="../views/public/event_details.php?id=<?php echo $event['event_id']; ?>" class="btn btn-outline">
                                             <i class="fas fa-eye"></i> View
                                         </a>
 
@@ -1106,7 +1106,7 @@ $totalPages = ceil($totalEvents / $limit);
                                                 <i class="fas fa-times"></i> Full
                                             </span>
                                         <?php else: ?>
-                                            <a href="../events/register.php?id=<?php echo $event['event_id']; ?>" class="btn btn-primary">
+                                            <a href="../views/user/register_event.php?id=<?php echo $event['event_id']; ?>" class="btn btn-primary">
                                                 <i class="fas fa-ticket-alt"></i> Register
                                             </a>
                                         <?php endif; ?>
